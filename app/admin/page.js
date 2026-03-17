@@ -60,10 +60,19 @@ export default function AdminPage() {
   const fetchFromFirestore = async () => {
     try {
       setLoading(true);
-      const q = query(collection(db, 'concursos'), orderBy('pubDate', 'desc'));
+      // Fetch all docs to avoid missing ones without pubDate
+      const q = collection(db, 'concursos');
       const querySnapshot = await getDocs(q);
       const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setConcursos(data);
+      
+      // Sort in memory: first by isManual, then by date/pubDate
+      const sorted = data.sort((a, b) => {
+        const dateA = a.pubDate || a.date || '0000-00-00';
+        const dateB = b.pubDate || b.date || '0000-00-00';
+        return dateB.localeCompare(dateA);
+      });
+
+      setConcursos(sorted);
     } catch (err) {
       console.error("Error fetching Firestore:", err);
       showStatus('error', 'Error al cargar datos de Firestore');
@@ -495,29 +504,43 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody style={{fontSize: '0.875rem'}}>
-                  {concursos.map((c) => (
-                    <tr key={c.id} style={{borderTop: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s'}} className="admin-row-hover">
-                      <td style={{padding: '20px 24px', color: '#94a3b8', whiteSpace: 'nowrap'}}>{c.pubDate}</td>
-                      <td style={{padding: '20px 24px'}}>
-                        <div style={{fontWeight: 700, color: '#f1f5f9', marginBottom: '4px'}}>{c.title}</div>
-                        <div style={{fontSize: '0.75rem', color: '#64748b'}}>{c.eventDate || 'Sin fecha fija'} • {c.time || 'Sin hora'}</div>
-                      </td>
-                      <td style={{padding: '20px 24px'}}>
-                        <span style={{
-                          padding: '4px 10px', borderRadius: '8px', fontSize: '0.7rem',
-                          fontWeight: 800, background: 'rgba(255,255,255,0.05)', color: '#94a3b8'
-                        }}>
-                          {c.level}
-                        </span>
-                      </td>
-                      <td style={{padding: '20px 24px', textAlign: 'right'}}>
-                        <div style={{display: 'flex', justifyContent: 'flex-end', gap: '8px'}}>
-                          <button onClick={() => startEdit(c)} style={{background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', border: 'none', padding: '8px', borderRadius: '10px', cursor: 'pointer'}} title="Editar"><Edit3 size={18} /></button>
-                          <button onClick={() => handleDelete(c.id)} style={{background: 'rgba(239, 68, 68, 0.1)', color: '#f87171', border: 'none', padding: '8px', borderRadius: '10px', cursor: 'pointer'}} title="Eliminar"><Trash2 size={18} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {concursos.map((c) => {
+                    const isExpired = c.date ? new Date(c.date) < new Date() : false;
+                    return (
+                      <tr key={c.id} style={{borderTop: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s', opacity: isExpired ? 0.7 : 1}} className="admin-row-hover">
+                        <td style={{padding: '20px 24px', color: '#94a3b8', whiteSpace: 'nowrap'}}>{c.pubDate || 'Sin fecha'}</td>
+                        <td style={{padding: '20px 24px'}}>
+                          <div style={{fontWeight: 700, color: '#f1f5f9', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                            {c.title}
+                            {isExpired && (
+                              <span style={{
+                                padding: '2px 6px', borderRadius: '4px', fontSize: '0.6rem',
+                                fontWeight: 900, background: 'rgba(239, 68, 68, 0.2)', color: '#f87171',
+                                border: '1px solid rgba(239, 68, 68, 0.3)', textTransform: 'uppercase'
+                              }}>
+                                Vencido
+                              </span>
+                            )}
+                          </div>
+                          <div style={{fontSize: '0.75rem', color: '#64748b'}}>{c.eventDate || 'Sin fecha fija'} • {c.time || 'Sin hora'}</div>
+                        </td>
+                        <td style={{padding: '20px 24px'}}>
+                          <span style={{
+                            padding: '4px 10px', borderRadius: '8px', fontSize: '0.7rem',
+                            fontWeight: 800, background: 'rgba(255,255,255,0.05)', color: '#94a3b8'
+                          }}>
+                            {c.level}
+                          </span>
+                        </td>
+                        <td style={{padding: '20px 24px', textAlign: 'right'}}>
+                          <div style={{display: 'flex', justifyContent: 'flex-end', gap: '8px'}}>
+                            <button onClick={() => startEdit(c)} style={{background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', border: 'none', padding: '8px', borderRadius: '10px', cursor: 'pointer'}} title="Editar"><Edit3 size={18} /></button>
+                            <button onClick={() => handleDelete(c.id)} style={{background: 'rgba(239, 68, 68, 0.1)', color: '#f87171', border: 'none', padding: '8px', borderRadius: '10px', cursor: 'pointer'}} title="Eliminar"><Trash2 size={18} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
