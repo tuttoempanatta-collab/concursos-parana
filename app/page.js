@@ -416,7 +416,7 @@ export default function Home() {
           <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
             <a href="/admin" style={{fontSize: '0.7rem', color: 'rgba(255,255,255,0.05)', textDecoration: 'none'}}>Admin</a>
             <div style={{background: 'rgba(255,255,255,0.1)', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)'}}>
-              v2.0
+              v2.1
             </div>
           </div>
           <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>

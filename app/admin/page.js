@@ -308,7 +308,7 @@ export default function AdminPage() {
               background: 'linear-gradient(45deg, #60a5fa, #a78bfa)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
             }}>
-              Admin Concursos 2026
+              Admin Concursos 2026 (v2.1)
             </h1>
             <p style={{fontSize: '0.75rem', color: '#64748b', margin: '4px 0 0 0'}}>
               Sesión: <span style={{color: '#94a3b8'}}>{user.email}</span>
