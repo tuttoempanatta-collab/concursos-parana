@@ -4,6 +4,11 @@ const path = require('path');
 
 console.log('--- ACTUALIZANDO DATOS EN VIVO (FIREBASE) ---');
 
+    // 0. Verificar Token de Firebase (Fundamental para GitHub Actions)
+    if (process.env.GITHUB_ACTIONS && !process.env.FIREBASE_TOKEN) {
+        console.warn('AVISO: FIREBASE_TOKEN no encontrado en el entorno. El despliegue fallará.');
+    }
+
 try {
     // 1. Ejecutar el scraper para obtener datos frescos
     console.log('1. Ejecutando scraper...');

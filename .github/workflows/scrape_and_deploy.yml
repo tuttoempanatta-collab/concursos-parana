@@ -24,7 +24,14 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Debug - List Files Before
+        run: ls -R
+
       - name: Run Scraper and Deploy to Firebase
         run: node update-live-data.js
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+
+      - name: Debug - List Files After
+        if: always()
+        run: ls -R
