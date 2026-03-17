@@ -139,6 +139,52 @@ export default function AdminPage() {
     }
   };
 
+  const handleForceSync = async () => {
+    try {
+      showStatus('success', 'Sincronizando con la nube... espera un momento');
+      const response = await fetch('/parsed_data.json');
+      const data = await response.json();
+      
+      if (!Array.isArray(data)) throw new Error('Datos inválidos');
+      
+      let count = 0;
+      for (const concurso of data) {
+        // Deterministic ID
+        const docId = concurso.link.split('/').pop().replace(/[^a-zA-Z0-9]/g, '_') || Math.random().toString(36).substr(2, 9);
+        const docRef = doc(db, 'concursos', docId);
+        
+        await updateDoc(docRef, {
+          ...concurso,
+          isManual: concurso.isManual || false,
+          pubDate: concurso.pubDate || new Date().toISOString().split('T')[0],
+          updatedAt: new Date().toISOString()
+        }).catch(async () => {
+          // If update fails (doc doesn't exist), try to set it
+          const { id, ...cleanData } = concurso;
+          await updateDoc(docRef, { ...cleanData, isManual: false, updatedAt: new Date().toISOString() })
+            .catch(async () => {
+              // Final fallback set
+              const { id: _, ...finalData } = concurso;
+              const { setDoc } = await import('firebase/firestore');
+              await setDoc(docRef, {
+                ...finalData,
+                isManual: false,
+                pubDate: finalData.pubDate || new Date().toISOString().split('T')[0],
+                updatedAt: new Date().toISOString()
+              });
+            });
+        });
+        count++;
+      }
+      
+      showStatus('success', `¡Sincronización completa! ${count} concursos subidos.`);
+      fetchFromFirestore();
+    } catch (err) {
+      console.error("Sync error:", err);
+      showStatus('error', 'Error en sincronización forzada');
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!confirm('¿Seguro que quieres eliminar este concurso?')) return;
     try {
@@ -270,6 +316,18 @@ export default function AdminPage() {
             </p>
           </div>
           <div style={{display: 'flex', gap: '12px'}}>
+            <button 
+              onClick={handleForceSync}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px', background: '#3b82f6',
+                color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '12px',
+                fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
+                boxShadow: '0 10px 15px -3px rgba(59, 130, 235, 0.2)'
+              }}
+              title="Traer los últimos concursos del robot a la nube"
+            >
+              <RefreshCw size={18} /> Sincronización Forzada
+            </button>
             <button 
               onClick={openAddForm}
               style={{
