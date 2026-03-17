@@ -408,6 +408,10 @@ export default function Home() {
         {/* Sidebar Filters */}
         <aside className="filters-container glass-panel">
           
+          <div style={{marginBottom: '1rem', opacity: 0.3, fontSize: '0.65rem', letterSpacing: '0.1em', fontWeight: 600, textTransform: 'uppercase', textAlign: 'left'}}>
+            Created by Colombo Francisco
+          </div>
+
           <div style={{position: 'relative', marginBottom: '1.5rem'}}>
             <SearchIcon size={18} style={{position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)'}} />
             <input 
