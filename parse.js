@@ -461,11 +461,12 @@ async function scrapeCGEPage(url) {
                     link: href,
                     nivel: level,
                     date: date ? date.toISOString() : null,
+                    pubDate: new Date().toISOString().split('T')[0], // Standard field for Admin Panel
                     department: city,
                     originalText: text,
                     materias: detailedData.subjects,
                     plazas: detailedData.plazas,
-                    fullContent: detailedData.fullTextContent || '',
+                    fullContent: detailedData.fullContent || '',
                     solicitud: detailedData.solicitud
                 };
             });
@@ -519,6 +520,7 @@ async function run() {
                     link: 'https://cge.entrerios.gov.ar/concursos-docentes/',
                     nivel: level,
                     date: date ? date.toISOString() : null,
+                    pubDate: new Date().toISOString().split('T')[0],
                     department: city,
                     originalText: title,
                     materias: [],
