@@ -13,7 +13,8 @@ import {
   doc, 
   updateDoc, 
   addDoc, 
-  deleteDoc, 
+  deleteDoc,
+  setDoc,
   query, 
   orderBy 
 } from 'firebase/firestore';
@@ -25,7 +26,8 @@ import {
   Edit3, 
   X,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -153,27 +155,14 @@ export default function AdminPage() {
         const docId = concurso.link.split('/').pop().replace(/[^a-zA-Z0-9]/g, '_') || Math.random().toString(36).substr(2, 9);
         const docRef = doc(db, 'concursos', docId);
         
-        await updateDoc(docRef, {
-          ...concurso,
-          isManual: concurso.isManual || false,
-          pubDate: concurso.pubDate || new Date().toISOString().split('T')[0],
+        const { id: _, ...cleanData } = concurso;
+        await setDoc(docRef, {
+          ...cleanData,
+          isManual: cleanData.isManual || false,
+          pubDate: cleanData.pubDate || new Date().toISOString().split('T')[0],
           updatedAt: new Date().toISOString()
-        }).catch(async () => {
-          // If update fails (doc doesn't exist), try to set it
-          const { id, ...cleanData } = concurso;
-          await updateDoc(docRef, { ...cleanData, isManual: false, updatedAt: new Date().toISOString() })
-            .catch(async () => {
-              // Final fallback set
-              const { id: _, ...finalData } = concurso;
-              const { setDoc } = await import('firebase/firestore');
-              await setDoc(docRef, {
-                ...finalData,
-                isManual: false,
-                pubDate: finalData.pubDate || new Date().toISOString().split('T')[0],
-                updatedAt: new Date().toISOString()
-              });
-            });
-        });
+        }, { merge: true });
+        
         count++;
       }
       
