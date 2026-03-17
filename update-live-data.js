@@ -24,13 +24,6 @@ try {
 
         fs.copyFileSync('parsed_data.json', path.join('public', 'parsed_data.json'));
         fs.copyFileSync('parsed_data.json', path.join('out', 'parsed_data.json'));
-        
-        // Si estamos en CI (GitHub Actions), necesitamos al menos un index.html básico si 'out' está vacío
-        // para que Firebase no se queje, aunque lo ideal es que 'out' tenga la web completa.
-        if (!fs.existsSync(path.join('out', 'index.html'))) {
-            console.log('Nota: out/index.html no existe. Creando uno básico para evitar errores de despliegue.');
-            fs.writeFileSync(path.join('out', 'index.html'), '<html><body>Actualizando concursos...</body></html>');
-        }
     } else {
         throw new Error('No se generó parsed_data.json');
     }

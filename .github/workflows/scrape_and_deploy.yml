@@ -27,8 +27,8 @@ jobs:
       - name: Debug - List Files Before
         run: ls -R
 
-      - name: Run Scraper and Deploy to Firebase
-        run: node update-live-data.js
+      - name: Run Scraper and Sync to Firestore
+        run: node parse.js
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
