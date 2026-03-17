@@ -48,6 +48,7 @@ export default function Home() {
   }, [hiddenCardIds]);
 
   const fetchConcursos = async () => {
+    let finalData = [];
     try {
       setLoading(true);
       setError(null);
@@ -69,7 +70,6 @@ export default function Home() {
 
       // 2. FALLBACK TO STATIC JSON (If Firestore is empty or fails)
       const FIREBASE_DATA_URL = 'https://concursos-entre-rios.web.app/parsed_data.json';
-      let finalData = [];
 
       if (Capacitor.isNativePlatform()) {
         const urls = [

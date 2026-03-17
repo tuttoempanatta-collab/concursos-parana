@@ -13,6 +13,7 @@ if (!admin.apps.length) {
                 credential: admin.credential.cert(serviceAccount),
                 projectId: 'concursos-entre-rios'
             });
+            admin.firestore().settings({ ignoreUndefinedProperties: true });
             console.log('Firebase Admin inicializado con Service Account.');
         } catch (e) {
             console.error('Error al parsear FIREBASE_SERVICE_ACCOUNT:', e.message);
@@ -22,6 +23,7 @@ if (!admin.apps.length) {
         admin.initializeApp({
             projectId: 'concursos-entre-rios'
         });
+        admin.firestore().settings({ ignoreUndefinedProperties: true });
         console.log('Firebase Admin inicializado con Project ID (sin credenciales explícitas).');
     }
 }
