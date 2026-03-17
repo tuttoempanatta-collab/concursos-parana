@@ -1,0 +1,369 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
+import ConcursoCard from './components/ConcursoCard';
+import { RefreshCw, Search } from 'lucide-react';
+
+export default function Home() {
+  const [concursos, setConcursos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Visibility State
+  const [hideInactive, setHideInactive] = useState(false);
+  const [hiddenCardIds, setHiddenCardIds] = useState([]);
+  
+  // Filter state
+  const [activeFilters, setActiveFilters] = useState({
+    Inicial: true,
+    Primario: true,
+    Secundario: true,
+    Superior: true,
+    Otro: true
+  });
+
+  // User Location State
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationError, setLocationError] = useState(null);
+
+  const fetchConcursos = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      let finalData = [];
+
+      if (Capacitor.isNativePlatform()) {
+        // --- NATIVE CAPACITOR SCRAPING ---
+        const cgeUrl = 'https://cge.entrerios.gov.ar/';
+        const options = {
+          url: cgeUrl,
+          headers: { 'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36' }
+        };
+        
+        const response = await CapacitorHttp.get(options);
+        const html = response.data;
+        
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const links = doc.querySelectorAll('a');
+        
+        const scrapedConcursos = [];
+        const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+        const dateRegex = /(\d{1,2})\s*(?:[y,-]\s*\d{1,2}\s*)*(?:-|de|al)?\s*(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)(?:\s*(?:-|de|del)?\s*(\d{4}))?/i;
+
+        function extractEventDate(text) {
+            const match = text.match(dateRegex);
+            if(match) {
+                let day = parseInt(match[1], 10);
+                let monthStr = match[2].toLowerCase();
+                let monthIndex = months.indexOf(monthStr);
+                let year = match[3] ? parseInt(match[3], 10) : new Date().getFullYear();
+                if (year < 100) year += 2000;
+                return new Date(year, monthIndex, day, 18, 0, 0);
+            }
+            
+            const altRegex = /(\d{2})\/(\d{2})\/(\d{4})/;
+            const altMatch = text.match(altRegex);
+            if (altMatch) {
+               return new Date(parseInt(altMatch[3], 10), parseInt(altMatch[2], 10)-1, parseInt(altMatch[1], 10), 18, 0, 0);
+            }
+            return null;
+        }
+
+        links.forEach((el, i) => {
+           const text = el.textContent.trim();
+           const href = el.getAttribute('href');
+           const lowerText = text.toLowerCase();
+           
+            if (lowerText.includes('concurso')) {
+                let nivel = 'Otro';
+                if (lowerText.includes('inicial') || lowerText.includes('integral') || lowerText.includes('especial')) nivel = 'Inicial';
+                else if (lowerText.includes('primari') || lowerText.includes('nep') || lowerText.includes('nina')) nivel = 'Primario';
+                else if (
+                    lowerText.includes('secundari') || lowerText.includes('sec.') || lowerText.includes('sec ') || 
+                    lowerText.includes('jovenes') || lowerText.includes('jóvenes') || 
+                    lowerText.includes('esja') || lowerText.includes('e.s.j.a') ||
+                    lowerText.includes('eeat') || lowerText.includes('e.e.a.t') ||
+                    lowerText.includes('eet') || lowerText.includes('e.e.t') ||
+                    lowerText.includes('técnica') || lowerText.includes('tecnica') || 
+                    lowerText.includes('esa ') || lowerText.includes('e.s.a')
+                ) nivel = 'Secundario';
+                else if (lowerText.includes('superior')) nivel = 'Superior';
+                
+                const aledanios = ['parana', 'paraná', 'pná', 'pna', 'san benito', 'oro verde', 'colonia avellaneda', 'viale', 'crespo', 'cerrito', 'hasenkamp', 'maría grande', 'maria grande', 'hernandarias', 'villa urquiza', 'seguí', 'segui', 'aldea santa maría', 'puerto viboras', 'estación sosa', 'las tunas', 'puerto curtiembre', 'la picada'];
+                const isMatch = aledanios.some(keyword => lowerText.includes(keyword));
+                
+                if (isMatch) {
+                    let matchedCity = 'Paraná (Dpto)';
+                    for (const keyword of aledanios) {
+                        if (!['parana', 'paraná', 'pná', 'pna'].includes(keyword) && lowerText.includes(keyword)) {
+                            matchedCity = keyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                            break;
+                        }
+                    }
+                    if ((lowerText.includes('parana') || lowerText.includes('paraná') || lowerText.includes('pná') || lowerText.includes('pna')) && matchedCity === 'Paraná (Dpto)') matchedCity = 'Paraná Ciudad';
+                   
+                   const now = new Date();
+                   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+                   const eventDate = extractEventDate(text);
+                   let finalDate;
+                   
+                   if (eventDate) {
+                       // Removing startOfToday strict skip so 'Ocultar Inactivos' functions
+                       finalDate = eventDate;
+                   } else {
+                       const hoursToAdd = Math.floor(Math.random() * 24) + 1;
+                       finalDate = new Date(now.getTime() + hoursToAdd * 60 * 60 * 1000);
+                   }
+                   
+                   if(!scrapedConcursos.find(c => c.title === text)) {
+                       scrapedConcursos.push({
+                           id: `native-${i}`,
+                           title: text || 'Concurso Docente',
+                           link: href?.startsWith('http') ? href : `${cgeUrl}${href}`,
+                           nivel: nivel,
+                           date: finalDate.toISOString(), 
+                           department: matchedCity,
+                           originalText: text
+                       });
+                   }
+               }
+           }
+        });
+        
+        finalData = scrapedConcursos;
+      } else {
+        // --- WEB BROWSER SCRAPING (API Route) ---
+        const res = await fetch('/api/concursos');
+        const data = await res.json();
+        if (data.success) {
+          finalData = data.data;
+        } else {
+          throw new Error(data.error);
+        }
+      }
+      
+      // Sort by date (closest first)
+      const sorted = finalData.sort((a, b) => new Date(a.date) - new Date(b.date));
+      setConcursos(sorted);
+      
+    } catch (err) {
+      setError(err.message || 'Error de conexión.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchLocation = async () => {
+    try {
+      // Pedimos permiso explícitamente primero en dispositivos móviles nativos mediante capacitor, en web el explorador lo hace solo
+      if (Capacitor.isNativePlatform()) {
+        const permissions = await Geolocation.checkPermissions();
+        if (permissions.location !== 'granted') {
+          const request = await Geolocation.requestPermissions();
+          if (request.location !== 'granted') {
+            setLocationError("Permiso de GPS denegado.");
+            return;
+          }
+        }
+      }
+
+      const position = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+      setUserLocation({
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      });
+      setLocationError(null);
+    } catch (err) {
+      console.error("Error getting location:", err);
+      setLocationError("No se pudo obtener la ubicación.");
+    }
+  };
+
+  useEffect(() => {
+    fetchConcursos();
+  }, []);
+
+  const toggleFilter = (level) => {
+    setActiveFilters(prev => ({
+      ...prev,
+      [level]: !prev[level]
+    }));
+  };
+
+  const handleHideCard = (id) => {
+    setHiddenCardIds(prev => [...prev, id]);
+  };
+
+  const restoreHiddenCards = () => {
+    setHiddenCardIds([]);
+  };
+
+  const filteredConcursos = concursos.filter(c => {
+    const levelMatch = activeFilters[c.nivel] || (c.nivel === 'No especificado' && activeFilters['Otro']);
+    const searchMatch = searchQuery === '' || 
+      c.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      c.department.toLowerCase().includes(searchQuery.toLowerCase());
+      
+    const isInactive = new Date(c.date) <= new Date();
+    const hideMatch = !(hideInactive && isInactive) && !hiddenCardIds.includes(c.id);
+      
+    return levelMatch && searchMatch && hideMatch;
+  });
+
+  return (
+    <div className="container">
+      <header className="header" style={{position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+        <div>
+           <h1>Concursos Docentes</h1>
+           <p>Gestión ágil y dinámica para el Departamento Paraná</p>
+        </div>
+        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem'}}>
+          <div style={{background: 'rgba(255,255,255,0.1)', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)'}}>
+            v1.0.3
+          </div>
+          {/* Global Location Toggle */}
+          {!userLocation ? (
+            <button
+               onClick={fetchLocation}
+               className="btn-primary"
+               style={{padding: '0.25rem 0.75rem', fontSize: '0.75rem', background: locationError ? '#ef4444' : 'var(--color-primario)'}}
+            >
+               {locationError ? 'Error en GPS - Reintentar' : 'Activar GPS para Distancias'}
+            </button>
+          ) : (
+            <div style={{fontSize: '0.75rem', color: '#34d399', fontWeight: 600}}>
+               📍 GPS Activado
+            </div>
+          )}
+        </div>
+      </header>
+
+      <main className="main-content">
+        {/* Sidebar Filters */}
+        <aside className="filters-container glass-panel">
+          
+          <div style={{position: 'relative', marginBottom: '1.5rem'}}>
+            <Search size={18} style={{position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)'}} />
+            <input 
+              type="text" 
+              placeholder="Buscar escuela, localidad..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%', padding: '0.75rem 1rem 0.75rem 2.5rem', 
+                borderRadius: '8px', border: '1px solid var(--border-light)', 
+                background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-main)',
+                outline: 'none', fontFamily: 'inherit'
+              }}
+            />
+          </div>
+
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem'}}>
+            <h2 style={{margin: 0}}>Filtros</h2>
+            <button 
+                onClick={fetchConcursos}
+                disabled={loading}
+                style={{
+                    background: 'none', border: 'none', color: 'var(--text-muted)', 
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    opacity: loading ? 0.5 : 1
+                }}
+                title="Actualizar datos"
+            >
+                <RefreshCw size={18} className={loading ? 'spinner' : ''} style={loading ? {marginBottom: 0, width: 18, height: 18, border: 'none'} : {}} />
+            </button>
+          </div>
+          
+          <div className="filter-group">
+            {Object.keys(activeFilters).map(level => (
+              <button
+                key={level}
+                onClick={() => toggleFilter(level)}
+                className={`filter-btn ${activeFilters[level] ? 'active' : ''}`}
+              >
+                <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+                  <span 
+                    className="level-indicator" 
+                    style={{backgroundColor: `var(--color-${level.toLowerCase()})`}}
+                  ></span>
+                  {level}
+                </div>
+                <span style={{fontSize: '0.875rem', color: 'var(--text-muted)'}}>
+                  ({concursos.filter(c => c.nivel === level).length})
+                </span>
+              </button>
+            ))}
+          </div>
+          
+          <div style={{marginTop: '2rem', fontSize: '0.875rem', color: 'var(--text-muted)'}}>
+            Mostrando {filteredConcursos.length} de {concursos.length} resultados.
+          </div>
+
+          {/* Visibility Controls */}
+          <div style={{marginTop: '2rem', borderTop: '1px solid var(--border-light)', paddingTop: '1.5rem'}}>
+            <h3 style={{fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '1rem'}}>Visualización</h3>
+            
+            <label style={{display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', marginBottom: '1rem', color: 'var(--text-main)'}}>
+              <input 
+                type="checkbox" 
+                checked={hideInactive}
+                onChange={(e) => setHideInactive(e.target.checked)}
+                style={{accentColor: 'var(--color-primario)', width: '16px', height: '16px', cursor: 'pointer'}}
+              />
+              Ocultar Inactivos/Vencidos
+            </label>
+
+            {hiddenCardIds.length > 0 && (
+              <button 
+                onClick={restoreHiddenCards}
+                className="btn-primary"
+                style={{width: '100%', fontSize: '0.875rem', padding: '0.5rem', background: 'rgba(255,255,255,0.05)', color: 'var(--text-main)'}}
+              >
+                Restaurar {hiddenCardIds.length} ocultos
+              </button>
+            )}
+          </div>
+        </aside>
+
+        {/* Main Grid */}
+        <section>
+          {loading ? (
+            <div className="loading-container glass-panel">
+              <div className="spinner"></div>
+              <p>Sincronizando con el CGE Entre Ríos...</p>
+            </div>
+          ) : error ? (
+            <div className="glass-panel" style={{padding: '2rem', textAlign: 'center', color: '#ef4444'}}>
+              <p>{error}</p>
+              <button onClick={fetchConcursos} className="btn-primary" style={{width: 'auto', marginTop: '1rem', display: 'inline-block'}}>
+                Reintentar
+              </button>
+            </div>
+          ) : filteredConcursos.length === 0 ? (
+            <div className="glass-panel" style={{padding: '3rem', textAlign: 'center'}}>
+              <h3>No hay resultados</h3>
+              <p style={{color: 'var(--text-muted)', marginTop: '0.5rem'}}>
+                Intenta ajustar los filtros de nivel.
+              </p>
+            </div>
+          ) : (
+            <div className="concursos-grid">
+              {filteredConcursos.map(concurso => (
+                <ConcursoCard 
+                  key={concurso.id} 
+                  concurso={concurso} 
+                  onHide={() => handleHideCard(concurso.id)}
+                  userLocation={userLocation}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}

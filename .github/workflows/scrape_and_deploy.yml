@@ -1,0 +1,30 @@
+name: Scrape and Deploy Contests
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Se ejecuta al principio de cada hora
+  push:
+    branches:
+      - main            # También se ejecuta cuando subes cambios a la rama principal
+  workflow_dispatch:     # Permite ejecutarlo manualmente desde GitHub
+
+jobs:
+  scrape_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Scraper and Deploy to Firebase
+        run: node update-live-data.js
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}

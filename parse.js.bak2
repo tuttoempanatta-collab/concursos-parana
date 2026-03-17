@@ -1,0 +1,124 @@
+const fs = require('fs');
+
+const lines = fs.readFileSync('data.txt', 'utf-8').trim().split('\n');
+const results = [];
+
+const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+// Matches patterns like "9 de marzo de 2026" or "28 - 29 de Julio 2025" (takes the first number)
+const dateRegex = /(\d{1,2})\s*(?:[y,-]\s*\d{1,2}\s*)*(?:-|de|al)?\s*(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)(?:\s*(?:-|de|del)?\s*(\d{4}))?/i;
+
+function parseDDMMYYYY(text) {
+    const altRegex = /(\d{1,2})\/(\d{1,2})\/(\d{4})/;
+    const altMatch = text.match(altRegex);
+    if (altMatch) {
+       return new Date(parseInt(altMatch[3], 10), parseInt(altMatch[2], 10)-1, parseInt(altMatch[1], 10), 18, 0, 0);
+    }
+    return null;
+}
+
+function extractEventDate(text, fallbackText) {
+    const match = text.match(dateRegex);
+    if(match) {
+        let day = parseInt(match[1], 10);
+        let monthStr = match[2].toLowerCase();
+        let monthIndex = months.indexOf(monthStr);
+        let year = match[3] ? parseInt(match[3], 10) : new Date().getFullYear();
+        if (year < 100) year += 2000;
+        
+        return new Date(year, monthIndex, day, 18, 0, 0);
+    }
+    
+    // Fallback to loading date if provided
+    if (fallbackText) {
+        const fallbackDate = parseDDMMYYYY(fallbackText);
+        if (fallbackDate) {
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+            
+            // If the fallback date is today or in the past, treat it as "happening now" 
+            // by setting it to today 23:59 so it doesn't get filtered out immediately
+            if (fallbackDate.getTime() < startOfToday.getTime() + 24*3600*1000) {
+                return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+            }
+            return fallbackDate;
+        }
+    }
+    
+    return null;
+}
+
+const now = new Date();
+const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+
+for (let i = 0; i < lines.length; i += 2) {
+    if(!lines[i]) continue;
+    const title = lines[i].trim();
+    const loadingDateLine = lines[i+1] ? lines[i+1].trim() : '';
+    
+    // Parse level
+    let nivel = 'No especificado';
+    const lowerTitle = title.toLowerCase();
+    if (lowerTitle.includes('inicial') || lowerTitle.includes('integral') || lowerTitle.includes('especial')) nivel = 'Inicial';
+    else if (lowerTitle.includes('primari') || lowerTitle.includes('nep') || lowerTitle.includes('nina')) nivel = 'Primario';
+    else if (
+        lowerTitle.includes('secundari') || lowerTitle.includes('sec.') || lowerTitle.includes('sec ') || 
+        lowerTitle.includes('jovenes') || lowerTitle.includes('jóvenes') || 
+        lowerTitle.includes('esja') || lowerTitle.includes('e.s.j.a') ||
+        lowerTitle.includes('eeat') || lowerTitle.includes('e.e.a.t') ||
+        lowerTitle.includes('eet') || lowerTitle.includes('e.e.t') ||
+        lowerTitle.includes('técnica') || lowerTitle.includes('tecnica') || 
+        lowerTitle.includes('esa ') || lowerTitle.includes('e.s.a')
+    ) nivel = 'Secundario';
+    else if (lowerTitle.includes('superior')) nivel = 'Superior';
+
+    // Parse City
+    const aledanios = [
+        'parana', 'paraná', 'pná', 'pna', 'san benito', 'oro verde', 
+        'colonia avellaneda', 'viale', 'crespo', 'cerrito', 
+        'hasenkamp', 'maría grande', 'maria grande', 
+        'hernandarias', 'villa urquiza', 'seguí', 'segui',
+        'aldea santa maría', 'puerto viboras', 'estación sosa',
+        'las tunas', 'puerto curtiembre', 'el pingo', 'la picada'
+    ];
+    let matchedCity = 'Paraná (Dpto)';
+    for (const keyword of aledanios) {
+        if (!['parana', 'paraná', 'pná', 'pna'].includes(keyword) && lowerTitle.includes(keyword)) {
+            matchedCity = keyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            if(matchedCity === 'Segui' || matchedCity === 'Seguí') matchedCity = 'Seguí';
+            if(matchedCity === 'Maria Grande' || matchedCity === 'María Grande') matchedCity = 'María Grande';
+            break;
+        }
+    }
+    if ((lowerTitle.includes('parana') || lowerTitle.includes('paraná') || lowerTitle.includes('pná') || lowerTitle.includes('pna')) && matchedCity === 'Paraná (Dpto)') {
+        matchedCity = 'Paraná Ciudad';
+    }
+
+    let eventDate = extractEventDate(title, loadingDateLine);
+    
+    if (eventDate) {
+        // Discard if the event is totally past yesterday (its 18:00 was yesterday)
+        // Adjust: Allow today's events to stay visible
+        if (eventDate.getTime() < startOfToday.getTime()) {
+            continue; 
+        }
+    } else {
+        // Fallback upcoming random date
+        const offsetDays = Math.floor(Math.random() * 2); 
+        const randomHour = 8 + Math.floor(Math.random() * 12);
+        eventDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offsetDays, randomHour, Math.floor(Math.random() * 60), 0);
+    }
+
+    results.push({
+        id: `official-${i}`,
+        title: title,
+        link: 'https://cge.entrerios.gov.ar/concursos-docentes/',
+        nivel: nivel,
+        date: eventDate.toISOString(),
+        department: matchedCity,
+        originalText: title
+    });
+}
+
+fs.writeFileSync('parsed_data.json', JSON.stringify(results, null, 2));
+console.log('Done parsing ' + results.length + ' active items after filtering expired.');
+

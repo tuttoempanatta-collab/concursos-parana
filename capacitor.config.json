@@ -1,0 +1,11 @@
+{
+  "appId": "com.cge.concursos",
+  "appName": "Concursos CGE",
+  "webDir": "out",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

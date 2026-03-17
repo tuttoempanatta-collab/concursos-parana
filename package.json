@@ -1,0 +1,32 @@
+{
+  "name": "concursos-parana",
+  "version": "1.0.9",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3002",
+    "build": "next build",
+    "build:apk": "next build && npx cap sync android",
+    "update:cloud": "node update-live-data.js",
+    "deploy:full": "npm run build && npm run update:cloud",
+    "start": "next start -p 3002",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
+    "@capacitor/geolocation": "^8.1.0",
+    "axios": "^1.13.6",
+    "cheerio": "^1.2.0",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.577.0",
+    "next": "16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.2.0",
+    "cross-env": "^10.1.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6"
+  }
+}
