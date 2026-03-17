@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import ConcursoCard from './components/ConcursoCard';
-import { RefreshCw, Search as SearchIcon } from 'lucide-react';
+import { RefreshCw, Search as SearchIcon, Heart, X, Users } from 'lucide-react';
 
 import { db } from '../firebase.config';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 
 export default function Home() {
   const [concursos, setConcursos] = useState([]);
@@ -32,6 +32,10 @@ export default function Home() {
   const [userLocation, setUserLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);
 
+  // Social/Analytics State
+  const [visitorCount, setVisitorCount] = useState(0);
+  const [showDonate, setShowDonate] = useState(false);
+
   // Persistence: Load hidden IDs on mount
   useEffect(() => {
     const saved = localStorage.getItem('hiddenConcursos');
@@ -46,6 +50,34 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem('hiddenConcursos', JSON.stringify(hiddenCardIds));
   }, [hiddenCardIds]);
+
+  // Visitor Counter Logic
+  useEffect(() => {
+    const handleVisitor = async () => {
+      try {
+        const statsRef = doc(db, 'metadata', 'stats');
+        
+        // Check if we counted this visit in this session
+        const sessionCounted = sessionStorage.getItem('visitCounted');
+        
+        if (!sessionCounted) {
+          // Increment in Firestore
+          await setDoc(statsRef, { visitors: increment(1) }, { merge: true });
+          sessionStorage.setItem('visitCounted', 'true');
+        }
+
+        // Fetch current count
+        const snap = await getDoc(statsRef);
+        if (snap.exists()) {
+          setVisitorCount(snap.data().visitors || 0);
+        }
+      } catch (e) {
+        console.error("Error handling visitor stats:", e);
+      }
+    };
+
+    handleVisitor();
+  }, []);
 
   const fetchConcursos = async () => {
     let finalData = [];
@@ -387,20 +419,41 @@ export default function Home() {
               v2.0
             </div>
           </div>
-          {/* Global Location Toggle */}
-          {!userLocation ? (
-            <button
-               onClick={fetchLocation}
-               className="btn-primary"
-               style={{padding: '0.25rem 0.75rem', fontSize: '0.75rem', background: locationError ? '#ef4444' : 'var(--color-primario)'}}
-            >
-               {locationError ? 'Error en GPS - Reintentar' : 'Activar GPS para Distancias'}
-            </button>
-          ) : (
-            <div style={{fontSize: '0.75rem', color: '#34d399', fontWeight: 600}}>
-               📍 GPS Activado
+          <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+            <div style={{display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: 0.6, fontSize: '0.7rem', color: 'var(--text-muted)'}}>
+              <Users size={14} />
+              <span>{visitorCount.toLocaleString()}</span>
             </div>
-          )}
+            
+            <button 
+              onClick={() => setShowDonate(true)}
+              style={{
+                background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)',
+                color: '#f87171', padding: '0.25rem 0.6rem', borderRadius: '6px', 
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem',
+                fontSize: '0.75rem', fontWeight: 600
+              }}
+              title="Colaborar con el proyecto"
+              className="admin-row-hover"
+            >
+              <Heart size={14} fill="#f87171" />
+              Colaborar
+            </button>
+
+            {!userLocation ? (
+              <button
+                onClick={fetchLocation}
+                className="btn-primary"
+                style={{padding: '0.25rem 0.75rem', fontSize: '0.75rem', background: locationError ? '#ef4444' : 'var(--color-primario)'}}
+              >
+                {locationError ? 'GPS!' : 'Activar GPS'}
+              </button>
+            ) : (
+              <div style={{fontSize: '0.75rem', color: '#34d399', fontWeight: 600, background: 'rgba(52, 211, 153, 0.1)', padding: '0.25rem 0.5rem', borderRadius: '4px'}}>
+                📍 GPS Activo
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -464,6 +517,7 @@ export default function Home() {
               </button>
             ))}
           </div>
+
           
           <div style={{marginTop: '2rem', fontSize: '0.875rem', color: 'var(--text-muted)'}}>
             Mostrando {filteredConcursos.length} de {concursos.length} resultados.
@@ -597,6 +651,60 @@ export default function Home() {
           )}
         </section>
       </main>
+      {/* Modal Donación */}
+      {showDonate && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+          background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)',
+          display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
+          padding: '1rem'
+        }}>
+          <div className="glass-panel" style={{
+            maxWidth: '500px', width: '100%', padding: '2rem', borderRadius: '24px',
+            position: 'relative', border: '1px solid rgba(248, 113, 113, 0.3)'
+          }}>
+            <button 
+              onClick={() => setShowDonate(false)}
+              style={{position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer'}}
+            >
+              <X size={24} />
+            </button>
+
+            <div style={{textAlign: 'center', marginBottom: '1.5rem'}}>
+              <div style={{background: 'rgba(239, 68, 68, 0.1)', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 1rem'}}>
+                <Heart size={30} color="#f87171" fill="#f87171" />
+              </div>
+              <h2 style={{margin: 0, color: '#f1f5f9'}}>Cofre de Solidaridad</h2>
+            </div>
+
+            <p style={{lineHeight: '1.6', color: '#cbd5e1', fontSize: '0.95rem', marginBottom: '2rem'}}>
+              ¡Hola, colega! 👋 👩‍🏫👨‍🏫 <br /><br />
+              Este espacio fue creado con mucha dedicación para que todos tengamos las mismas oportunidades de encontrar nuestro lugar en el aula. 🏫✨<br /><br />
+              Si esta web te ayudó a conseguir ese cargo o suplencia que buscabas, o simplemente te facilita el día a día, te invito a colaborar con lo que puedas para mantener los servidores y seguir mejorando el servicio. <br /><br />
+              ¡Mucha suerte en tu próximo concurso! 💪📖
+            </p>
+
+            <div style={{background: 'rgba(255,255,255,0.05)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)'}}>
+              <div style={{marginBottom: '1rem'}}>
+                <span style={{display: 'block', fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em'}}>Alias Mercado Pago</span>
+                <code style={{fontSize: '1.1rem', color: 'var(--color-primario)', fontWeight: 800}}>fcolombo61.ppay</code>
+              </div>
+              <div>
+                <span style={{display: 'block', fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em'}}>CBU</span>
+                <code style={{fontSize: '1rem', color: '#f1f5f9'}}>0000076500000038535516</code>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setShowDonate(false)}
+              className="btn-primary"
+              style={{width: '100%', marginTop: '1.5rem', padding: '1rem'}}
+            >
+              Entendido ❤️
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
