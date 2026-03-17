@@ -38,12 +38,8 @@ try {
     // 3. Desplegar solo el archivo de datos a Firebase Hosting
     console.log('3. Desplegando en Firebase Hosting...');
     try {
-        // Intentamos usar el token explícitamente si existe
-        if (process.env.FIREBASE_TOKEN) {
-            execSync('npx firebase deploy --only hosting --token "$FIREBASE_TOKEN"', { stdio: 'inherit' });
-        } else {
-            execSync('npx firebase deploy --only hosting', { stdio: 'inherit' });
-        }
+        // La CLI de Firebase detecta automáticamente la variable de entorno FIREBASE_TOKEN
+        execSync('npx firebase deploy --only hosting', { stdio: 'inherit' });
     } catch (deployError) {
         console.error('\nERROR CRÍTICO: El despliegue a Firebase falló.');
         console.error('Asegúrate de que el FIREBASE_TOKEN sea válido y esté bien configurado en GitHub Secrets.');
