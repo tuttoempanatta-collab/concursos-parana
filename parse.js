@@ -558,6 +558,13 @@ async function run() {
     });
 
     fs.writeFileSync('parsed_data.json', JSON.stringify(unique, null, 2));
+    
+    // Ensure it goes to public/ and out/ for frontend visibility
+    if (!fs.existsSync('public')) fs.mkdirSync('public');
+    if (!fs.existsSync('out')) fs.mkdirSync('out');
+    fs.writeFileSync(path.join('public', 'parsed_data.json'), JSON.stringify(unique, null, 2));
+    fs.writeFileSync(path.join('out', 'parsed_data.json'), JSON.stringify(unique, null, 2));
+
     console.log(`\nDONE: Saved ${unique.length} items to parsed_data.json`);
     
     // SYNC TO FIRESTORE
@@ -571,8 +578,9 @@ async function syncToFirestore(concursos) {
         const concursosRef = db.collection('concursos');
         
         for (const concurso of concursos) {
-            // Deterministic ID based on the link
-            const docId = concurso.link.split('/').pop().replace(/[^a-zA-Z0-9]/g, '_') || Math.random().toString(36).substr(2, 9);
+            // Deterministic ID based on the link (handle trailing slashes)
+            const cleanLink = concurso.link.replace(/\/$/, "");
+            const docId = cleanLink.split('/').pop().replace(/[^a-zA-Z0-9]/g, '_') || Math.random().toString(36).substr(2, 9);
             const docRef = concursosRef.doc(docId);
             
             const docSnap = await docRef.get();

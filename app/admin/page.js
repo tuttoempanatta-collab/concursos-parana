@@ -161,7 +161,8 @@ export default function AdminPage() {
       let count = 0;
       for (const concurso of data) {
         // Deterministic ID
-        const docId = concurso.link.split('/').pop().replace(/[^a-zA-Z0-9]/g, '_') || Math.random().toString(36).substr(2, 9);
+        const cleanLink = (concurso.link || "").replace(/\/$/, "");
+        const docId = cleanLink.split('/').pop().replace(/[^a-zA-Z0-9]/g, '_') || Math.random().toString(36).substr(2, 9);
         const docRef = doc(db, 'concursos', docId);
         
         const { id: _, ...cleanData } = concurso;
