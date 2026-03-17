@@ -4,14 +4,28 @@ const path = require('path');
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-// Initialize Firebase Admin (Using project-id for local/CI default auth)
+// Initialize Firebase Admin
 if (!admin.apps.length) {
-    admin.initializeApp({
-        projectId: 'concursos-entre-rios'
-    });
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+        try {
+            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount),
+                projectId: 'concursos-entre-rios'
+            });
+            console.log('Firebase Admin inicializado con Service Account.');
+        } catch (e) {
+            console.error('Error al parsear FIREBASE_SERVICE_ACCOUNT:', e.message);
+            admin.initializeApp({ projectId: 'concursos-entre-rios' });
+        }
+    } else {
+        admin.initializeApp({
+            projectId: 'concursos-entre-rios'
+        });
+        console.log('Firebase Admin inicializado con Project ID (sin credenciales explícitas).');
+    }
 }
 const db = admin.firestore();
-const path = require('path');
 
 function hashString(str) {
     let hash = 0;
