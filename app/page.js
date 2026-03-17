@@ -6,6 +6,9 @@ import { Geolocation } from '@capacitor/geolocation';
 import ConcursoCard from './components/ConcursoCard';
 import { RefreshCw, Search as SearchIcon } from 'lucide-react';
 
+import { db } from '../firebase.config';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+
 export default function Home() {
   const [concursos, setConcursos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,25 +51,24 @@ export default function Home() {
     try {
       setLoading(true);
       setError(null);
-      let finalData = [];
-
-      const FIREBASE_DATA_URL = 'https://concursos-entre-rios.web.app/parsed_data.json';
       
-      // 1. TRY FIREBASE FIRST (Centralized, fast data)
+      // 1. TRY FIRESTORE FIRST (Cloud sync, live data)
       try {
-        console.log("Fetching from Firebase...");
-        const response = await fetch(FIREBASE_DATA_URL, { cache: 'no-store' });
-        if (response.ok) {
-           const data = await response.json();
-           if (Array.isArray(data) && data.length > 0) {
-              setConcursos(data);
-              setLoading(false);
-              return; // SUCCESS!
-           }
+        console.log("Fetching from Firestore...");
+        const q = query(collection(db, 'concursos'), orderBy('pubDate', 'desc'));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setConcursos(data);
+            setLoading(false);
+            return; // SUCCESS!
         }
-      } catch (fError) {
-        console.warn("Firebase fetch failed, falling back...", fError);
+      } catch (dbError) {
+        console.warn("Firestore fetch failed, falling back...", dbError);
       }
+
+      // 2. FALLBACK TO STATIC JSON (If Firestore is empty or fails)
+      const FIREBASE_DATA_URL = 'https://concursos-entre-rios.web.app/parsed_data.json';
 
       if (Capacitor.isNativePlatform()) {
         const urls = [
@@ -378,8 +380,11 @@ export default function Home() {
            <p>Gestión ágil y dinámica para el Departamento Paraná</p>
         </div>
         <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem'}}>
-          <div style={{background: 'rgba(255,255,255,0.1)', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)'}}>
-            v1.0.9
+          <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+            <a href="/admin" style={{fontSize: '0.7rem', color: 'rgba(255,255,255,0.05)', textDecoration: 'none'}}>Admin</a>
+            <div style={{background: 'rgba(255,255,255,0.1)', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)'}}>
+              v1.0.9
+            </div>
           </div>
           {/* Global Location Toggle */}
           {!userLocation ? (

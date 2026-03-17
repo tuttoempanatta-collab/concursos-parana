@@ -1,6 +1,16 @@
+const admin = require('firebase-admin');
 const fs = require('fs');
+const path = require('path');
 const axios = require('axios');
 const cheerio = require('cheerio');
+
+// Initialize Firebase Admin (Using project-id for local/CI default auth)
+if (!admin.apps.length) {
+    admin.initializeApp({
+        projectId: 'concursos-entre-rios'
+    });
+}
+const db = admin.firestore();
 const path = require('path');
 
 function hashString(str) {
@@ -534,6 +544,38 @@ async function run() {
 
     fs.writeFileSync('parsed_data.json', JSON.stringify(unique, null, 2));
     console.log(`\nDONE: Saved ${unique.length} items to parsed_data.json (cut-off: ${cutoffDate.toLocaleDateString()})`);
+    
+    // SYNC TO FIRESTORE
+    await syncToFirestore(unique);
+}
+
+async function syncToFirestore(concursos) {
+    console.log('--- SINCRONIZANDO CON FIRESTORE ---');
+    try {
+        const batchSize = 500;
+        for (let i = 0; i < concursos.length; i += batchSize) {
+            const batch = db.batch();
+            const chunk = concursos.slice(i, i + batchSize);
+            
+            chunk.forEach(concurso => {
+                // Use a deterministic ID based on the link (same as hashString in frontend)
+                const docId = concurso.link.split('/').pop().replace(/[^a-zA-Z0-9]/g, '_') || Math.random().toString(36).substr(2, 9);
+                const docRef = db.collection('concursos').doc(docId);
+                
+                // set with merge: true to avoid overwriting manual edits (though scraper has priority on fields it found)
+                batch.set(docRef, {
+                    ...concurso,
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+            });
+            
+            await batch.commit();
+            console.log(`Batch ${i/batchSize + 1} sincronizado (${chunk.length} items)`);
+        }
+        console.log('¡Sincronización con Firestore exitosa!');
+    } catch (err) {
+        console.error('Error sincronizando con Firestore:', err.message);
+    }
 }
 
 run();
