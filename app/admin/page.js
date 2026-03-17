@@ -396,6 +396,16 @@ export default function AdminPage() {
                     onChange={e => setEditForm({...editForm, link: e.target.value})}
                   />
                 </div>
+                <div>
+                  <label style={{display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#3b82f6', marginBottom: '8px', textTransform: 'uppercase'}}>Reloj: Fecha y Hora Exacta</label>
+                  <input 
+                    type="datetime-local"
+                    style={{width: '100%', background: '#000', border: '1px solid #3b82f6', borderRadius: '12px', padding: '12px 16px', color: '#fff', outline: 'none'}}
+                    value={editForm.date ? new Date(editForm.date).toISOString().slice(0, 16) : ''} 
+                    onChange={e => setEditForm({...editForm, date: new Date(e.target.value).toISOString()})}
+                  />
+                  <p style={{fontSize: '0.65rem', color: '#64748b', marginTop: '4px'}}>Usa esto para que el contador "Faltan..." sea exacto.</p>
+                </div>
                 <div style={{gridColumn: '1 / -1'}}>
                   <label style={{display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase'}}>Contenido Completo (Detalles)</label>
                   <textarea 

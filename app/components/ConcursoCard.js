@@ -92,12 +92,15 @@ export default function ConcursoCard({ concurso, onHide, userLocation }) {
 
   // Function to build a search query for Nominatim
   const getNominationQuery = () => {
+    if (concurso.location && concurso.location.trim().length > 3) {
+      return concurso.location;
+    }
      // Clean up title to find school number/name better
      const basicMatch = concurso.title.match(/(ESCUELA[\w\sº°Nn]+(?:\d+|[A-Za-z]+))/i);
      let searchString = basicMatch ? basicMatch[0] : '';
      
      // Append department/city
-     let city = concurso.department.replace('(Dpto)', '').trim();
+     let city = (concurso.department || 'Paraná').replace('(Dpto)', '').trim();
      return `${searchString}, ${city}, Entre Rios, Argentina`;
   };
 
@@ -352,11 +355,16 @@ export default function ConcursoCard({ concurso, onHide, userLocation }) {
           </span>
         </a>
         <a 
-          href={concurso.link} 
-          target="_blank" 
+          href={concurso.link ? (concurso.link.startsWith('http') ? concurso.link : `https://${concurso.link}`) : '#'} 
+          target={concurso.link ? "_blank" : "_self"}
           rel="noopener noreferrer" 
           className="btn-primary"
-          style={{flex: 2}}
+          style={{
+            flex: 2,
+            opacity: concurso.link ? 1 : 0.4,
+            cursor: concurso.link ? 'pointer' : 'not-allowed',
+            pointerEvents: concurso.link ? 'auto' : 'none'
+          }}
         >
           <span style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'}}>
             Ver Concurso <ExternalLink size={16} />
