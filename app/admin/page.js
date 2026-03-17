@@ -159,38 +159,63 @@ export default function AdminPage() {
     });
   };
 
+  // Final robust check to avoid hydration mismatch
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  if (!mounted) return null;
+
   // LOGIN VIEW
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] p-4 font-sans">
-        <div className="w-full max-w-md bg-[#1a1a1a] border border-[#333] rounded-2xl p-8 shadow-2xl">
-          <h1 className="text-2xl font-bold text-white mb-2 text-center">Panel Admin</h1>
-          <p className="text-gray-400 mb-8 text-center text-sm">Gestiona los concursos del DDE Paraná</p>
+      <div style={{
+        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: '#0a0a0f', fontFamily: 'system-ui, sans-serif', color: '#fff'
+      }}>
+        <div style={{
+          width: '100%', maxWidth: '400px', background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '40px',
+          backdropFilter: 'blur(10px)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+        }}>
+          <div style={{textAlign: 'center', marginBottom: '32px'}}>
+             <h1 style={{fontSize: '2rem', fontWeight: 800, margin: '0 0 8px 0', background: 'linear-gradient(45deg, #3b82f6, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>Panel Admin</h1>
+             <p style={{color: '#94a3b8', fontSize: '0.875rem', margin: 0}}>Gestión de Concursos Paraná</p>
+          </div>
           
-          <div className="space-y-6">
+          <div style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Email</label>
+              <label style={{display: 'block', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: '8px', letterSpacing: '0.05em'}}>Email</label>
               <input 
                 type="email" 
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@ejemplo.com"
-                className="w-full bg-[#111] border border-[#333] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                style={{
+                  width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '12px', padding: '12px 16px', color: '#fff', outline: 'none'
+                }}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Contraseña</label>
+              <label style={{display: 'block', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: '8px', letterSpacing: '0.05em'}}>Contraseña</label>
               <input 
                 type="password" 
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-[#111] border border-[#333] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                style={{
+                  width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '12px', padding: '12px 16px', color: '#fff', outline: 'none'
+                }}
               />
             </div>
             
             {loginError && (
-              <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-3 rounded-lg text-sm flex items-center gap-2">
+              <div style={{
+                background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#f87171', padding: '12px', borderRadius: '12px', fontSize: '0.875rem',
+                display: 'flex', alignItems: 'center', gap: '8px'
+              }}>
                 <AlertCircle size={16} /> {loginError}
               </div>
             )}
@@ -198,7 +223,11 @@ export default function AdminPage() {
             <button 
               type="button"
               onClick={handleLogin}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98]"
+              style={{
+                width: '100%', background: '#2563eb', color: '#fff', fontWeight: 700, padding: '14px',
+                borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                boxShadow: '0 10px 15px -3px rgba(37, 99, 235, 0.3)', marginTop: '8px'
+              }}
             >
               Iniciar Sesión
             </button>
@@ -210,27 +239,51 @@ export default function AdminPage() {
 
   // DASHBOARD VIEW
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white p-4 font-sans">
-      <div className="max-w-6xl mx-auto">
+    <div style={{
+      minHeight: '100vh', background: '#0a0a0f', color: '#fff',
+      fontFamily: 'system-ui, -apple-system, sans-serif', padding: '24px'
+    }}>
+      <div style={{maxWidth: '1200px', margin: '0 auto'}}>
         
         {/* Header */}
-        <header className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 sticky top-0 bg-[#0a0a0a]/80 backdrop-blur-xl py-4 z-40">
+        <header style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          marginBottom: '32px', flexWrap: 'wrap', gap: '16px',
+          position: 'sticky', top: 0, background: 'rgba(10,10,15,0.8)',
+          backdropFilter: 'blur(20px)', padding: '16px 0', zIndex: 40
+        }}>
           <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+            <h1 style={{
+              fontSize: '1.5rem', fontWeight: 800, margin: 0,
+              background: 'linear-gradient(45deg, #60a5fa, #a78bfa)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
+            }}>
               Admin Concursos 2026
             </h1>
-            <p className="text-xs text-gray-500">Sesión iniciada como: {user.email}</p>
+            <p style={{fontSize: '0.75rem', color: '#64748b', margin: '4px 0 0 0'}}>
+              Sesión: <span style={{color: '#94a3b8'}}>{user.email}</span>
+            </p>
           </div>
-          <div className="flex gap-2">
+          <div style={{display: 'flex', gap: '12px'}}>
             <button 
               onClick={openAddForm}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-lg shadow-green-600/20"
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px', background: '#10b981',
+                color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '12px',
+                fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
+                boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.2)'
+              }}
             >
               <Plus size={18} /> Nuevo Concurso
             </button>
             <button 
               onClick={handleLogout}
-              className="flex items-center gap-2 bg-[#222] hover:bg-[#333] px-4 py-2 rounded-lg text-sm font-medium transition-all"
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)',
+                color: '#94a3b8', border: '1px solid rgba(255,255,255,0.1)',
+                padding: '10px 16px', borderRadius: '12px', fontSize: '0.875rem',
+                fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
+              }}
             >
               <LogOut size={18} /> Salir
             </button>
@@ -239,63 +292,77 @@ export default function AdminPage() {
 
         {/* Status Msg */}
         {statusMsg.text && (
-          <div className={`fixed bottom-8 right-8 p-4 rounded-xl flex items-center gap-3 shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-4 duration-300 ${
-            statusMsg.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-          }`}>
+          <div style={{
+            position: 'fixed', bottom: '32px', right: '32px', padding: '16px 24px',
+            borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '12px',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', zIndex: 100,
+            background: statusMsg.type === 'success' ? '#10b981' : '#ef4444',
+            color: '#fff', fontWeight: 600, animation: 'slideIn 0.3s ease-out'
+          }}>
             {statusMsg.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
-            <span className="font-semibold">{statusMsg.text}</span>
+            {statusMsg.text}
           </div>
         )}
 
         {/* Edit/Add Form Overlay */}
         {(editingId || isAdding) && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="w-full max-w-2xl bg-[#1a1a1a] border border-[#333] rounded-3xl p-8 max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold">{isAdding ? 'Nuevo Concurso' : 'Editar Concurso'}</h2>
-                <button onClick={cancelEdit} className="text-gray-500 hover:text-white"><X size={24} /></button>
+          <div style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)',
+            backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', padding: '16px', zIndex: 100
+          }}>
+            <div style={{
+              width: '100%', maxWidth: '700px', background: '#16161a',
+              border: '1px solid rgba(255,255,255,0.1)', borderRadius: '32px',
+              padding: '32px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 50px 100px -20px rgba(0,0,0,1)'
+            }}>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'}}>
+                <h2 style={{fontSize: '1.25rem', fontWeight: 800, margin: 0}}>
+                  {isAdding ? 'Crear Nuevo Concurso' : 'Editar Detalles'}
+                </h2>
+                <button onClick={cancelEdit} style={{background: 'none', border: 'none', color: '#64748b', cursor: 'pointer'}}><X size={24} /></button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="text-xs text-gray-500 font-bold mb-1 block">TÍTULO / DESCRIPCIÓN CORTA</label>
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px'}}>
+                <div style={{gridColumn: '1 / -1'}}>
+                  <label style={{display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase'}}>Título / Convocatoria</label>
                   <input 
-                    className="w-full bg-[#111] border border-[#333] rounded-xl px-4 py-2" 
+                    style={{width: '100%', background: '#000', border: '1px solid #333', borderRadius: '12px', padding: '12px 16px', color: '#fff', outline: 'none'}}
                     value={editForm.title} 
                     onChange={e => setEditForm({...editForm, title: e.target.value})}
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 font-bold mb-1 block">FECHA PUBLICACIÓN</label>
+                  <label style={{display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase'}}>Fecha Publicación</label>
                   <input 
                     type="date"
-                    className="w-full bg-[#111] border border-[#333] rounded-xl px-4 py-2" 
+                    style={{width: '100%', background: '#000', border: '1px solid #333', borderRadius: '12px', padding: '12px 16px', color: '#fff', outline: 'none'}}
                     value={editForm.pubDate} 
                     onChange={e => setEditForm({...editForm, pubDate: e.target.value})}
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 font-bold mb-1 block">FECHA CONCURSO</label>
+                  <label style={{display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase'}}>Fecha Concurso</label>
                   <input 
-                    className="w-full bg-[#111] border border-[#333] rounded-xl px-4 py-2" 
+                    style={{width: '100%', background: '#000', border: '1px solid #333', borderRadius: '12px', padding: '12px 16px', color: '#fff', outline: 'none'}}
                     value={editForm.eventDate} 
                     placeholder="Ej: 16 de marzo"
                     onChange={e => setEditForm({...editForm, eventDate: e.target.value})}
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 font-bold mb-1 block">HORARIO FIRMA</label>
+                  <label style={{display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase'}}>Horario Firma</label>
                   <input 
-                    className="w-full bg-[#111] border border-[#333] rounded-xl px-4 py-2" 
+                    style={{width: '100%', background: '#000', border: '1px solid #333', borderRadius: '12px', padding: '12px 16px', color: '#fff', outline: 'none'}}
                     value={editForm.time} 
                     placeholder="Ej: 10:30 hs"
                     onChange={e => setEditForm({...editForm, time: e.target.value})}
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 font-bold mb-1 block">NIVEL</label>
+                  <label style={{display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase'}}>Nivel</label>
                   <select 
-                    className="w-full bg-[#111] border border-[#333] rounded-xl px-4 py-2"
+                    style={{width: '100%', background: '#000', border: '1px solid #333', borderRadius: '12px', padding: '12px 16px', color: '#fff', outline: 'none'}}
                     value={editForm.level}
                     onChange={e => setEditForm({...editForm, level: e.target.value})}
                   >
@@ -306,68 +373,67 @@ export default function AdminPage() {
                     <option>Otro</option>
                   </select>
                 </div>
-                <div className="md:col-span-2">
-                  <label className="text-xs text-gray-500 font-bold mb-1 block">DESCRIPCIÓN COMPLETA (TEXTO)</label>
+                <div style={{gridColumn: '1 / -1'}}>
+                  <label style={{display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase'}}>Contenido Completo (Detalles)</label>
                   <textarea 
-                    rows={6}
-                    className="w-full bg-[#111] border border-[#333] rounded-xl px-4 py-2 text-sm" 
+                    rows={8}
+                    style={{width: '100%', background: '#000', border: '1px solid #333', borderRadius: '12px', padding: '12px 16px', color: '#fff', outline: 'none', resize: 'vertical', fontSize: '0.875rem'}}
                     value={editForm.fullContent} 
                     onChange={e => setEditForm({...editForm, fullContent: e.target.value})}
                   />
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-8">
+              <div style={{display: 'flex', gap: '16px', marginTop: '32px'}}>
                 <button 
                   onClick={isAdding ? handleAdd : handleUpdate}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2"
+                  style={{flex: 1, background: '#2563eb', color: '#fff', border: 'none', padding: '14px', borderRadius: '16px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'}}
                 >
-                  <Save size={20} /> Guardar Cambios
+                  <Save size={20} /> Guardar Concurso
                 </button>
-                <button onClick={cancelEdit} className="bg-[#222] px-6 rounded-xl font-medium">Cancelar</button>
+                <button onClick={cancelEdit} style={{background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', padding: '14px 24px', borderRadius: '16px', fontWeight: 600, cursor: 'pointer'}}>Cancelar</button>
               </div>
             </div>
           </div>
         )}
 
         {/* List */}
-        <div className="bg-[#111] border border-[#333] rounded-2xl overflow-hidden">
+        <div style={{background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', overflow: 'hidden'}}>
           {loading ? (
-            <div className="p-12 text-center text-gray-500 font-medium">Cargando concursos de Firestore...</div>
+            <div style={{padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 500}}>Sincronizando con Firestore...</div>
           ) : concursos.length === 0 ? (
-            <div className="p-12 text-center text-gray-500 font-medium">No hay concursos en la base de datos.</div>
+            <div style={{padding: '60px', textAlign: 'center', color: '#64748b', fontWeight: 500}}>Aún no hay concursos en la base de datos.</div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-[#1a1a1a] text-xs text-gray-400 uppercase tracking-widest border-b border-[#333]">
+            <div style={{overflowX: 'auto'}}>
+              <table style={{width: '100%', borderCollapse: 'collapse', textAlign: 'left'}}>
+                <thead style={{background: 'rgba(255,255,255,0.03)', fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em'}}>
                   <tr>
-                    <th className="px-6 py-4">Fecha Pub.</th>
-                    <th className="px-6 py-4">Título / Concurso</th>
-                    <th className="px-6 py-4">Nivel</th>
-                    <th className="px-6 py-4 text-right">Acciones</th>
+                    <th style={{padding: '16px 24px'}}>Publicación</th>
+                    <th style={{padding: '16px 24px'}}>Título y Detalles</th>
+                    <th style={{padding: '16px 24px'}}>Nivel</th>
+                    <th style={{padding: '16px 24px', textAlign: 'right'}}>Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#222]">
+                <tbody style={{fontSize: '0.875rem'}}>
                   {concursos.map((c) => (
-                    <tr key={c.id} className="hover:bg-blue-600/5 transition-colors group">
-                      <td className="px-6 py-4 text-sm whitespace-nowrap">{c.pubDate}</td>
-                      <td className="px-6 py-4">
-                        <div className="font-semibold text-gray-200 line-clamp-1">{c.title}</div>
-                        <div className="text-xs text-gray-500">{c.eventDate || 'Sin fecha'} - {c.time || 'Sin hora'}</div>
+                    <tr key={c.id} style={{borderTop: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s'}} className="admin-row-hover">
+                      <td style={{padding: '20px 24px', color: '#94a3b8', whiteSpace: 'nowrap'}}>{c.pubDate}</td>
+                      <td style={{padding: '20px 24px'}}>
+                        <div style={{fontWeight: 700, color: '#f1f5f9', marginBottom: '4px'}}>{c.title}</div>
+                        <div style={{fontSize: '0.75rem', color: '#64748b'}}>{c.eventDate || 'Sin fecha fija'} • {c.time || 'Sin hora'}</div>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] bg-[#333] font-bold text-gray-400">
+                      <td style={{padding: '20px 24px'}}>
+                        <span style={{
+                          padding: '4px 10px', borderRadius: '8px', fontSize: '0.7rem',
+                          fontWeight: 800, background: 'rgba(255,255,255,0.05)', color: '#94a3b8'
+                        }}>
                           {c.level}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => startEdit(c)} className="p-2 bg-blue-600/20 text-blue-400 rounded-lg hover:bg-blue-600 hover:text-white transition-all">
-                            <Edit3 size={18} />
-                          </button>
-                          <button onClick={() => handleDelete(c.id)} className="p-2 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600 hover:text-white transition-all">
-                            <Trash2 size={18} />
-                          </button>
+                      <td style={{padding: '20px 24px', textAlign: 'right'}}>
+                        <div style={{display: 'flex', justifyContent: 'flex-end', gap: '8px'}}>
+                          <button onClick={() => startEdit(c)} style={{background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', border: 'none', padding: '8px', borderRadius: '10px', cursor: 'pointer'}} title="Editar"><Edit3 size={18} /></button>
+                          <button onClick={() => handleDelete(c.id)} style={{background: 'rgba(239, 68, 68, 0.1)', color: '#f87171', border: 'none', padding: '8px', borderRadius: '10px', cursor: 'pointer'}} title="Eliminar"><Trash2 size={18} /></button>
                         </div>
                       </td>
                     </tr>
@@ -378,6 +444,10 @@ export default function AdminPage() {
           )}
         </div>
       </div>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .admin-row-hover:hover { background: rgba(255,255,255,0.02); }
+        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      `}} />
     </div>
   );
 }
