@@ -21,27 +21,6 @@
     "fullContent": ""
   },
   {
-    "id": "scrape-dept-wc3sno",
-    "title": "Dptal. Pná. – Convocatoria Concurso – Cargos de Mayor Jerarquía e Ingreso – Lunes 16 de Marzo de 2026 – Nivel Inicial, Primario y Modalidades.",
-    "link": "https://cge.entrerios.gov.ar/2026/03/dptal-pna-convocatoria-concurso-cargos-de-mayor-jerarquia-e-ingreso-lunes-16-de-marzo-de-2026-nivel-inicial-primario-y-modalidades/",
-    "nivel": "Primario",
-    "date": "2026-03-17T02:59:00.000Z",
-    "department": "Paraná Ciudad",
-    "originalText": "Dptal. Pná. – Convocatoria Concurso – Cargos de Mayor Jerarquía e Ingreso – Lunes 16 de Marzo de 2026 – Nivel Inicial, Primario y Modalidades.",
-    "materias": [],
-    "plazas": [
-      "Dptal. Pná. – Convocatoria Concurso – Cargos de Mayor Jerarquía e Ingreso – Lunes 16 de Marzo de 2026 – Nivel Inicial, Primario y Modalidades.",
-      "La Dirección Departamental de Escuelas Paraná Convoca a concurso presencial para el día Lunes 16 de marzo de 2026, a partir de las 09:00 hs, en salón de concursos de la Dirección Departamental de Escuelas de Paraná, sita en calle Don Bosco N°749 de la Ciudad de Paraná, para la cobertura de Cargos de Ascenso e Ingreso de Nivel Inicial – Primario y Modalidades. En el marco del Acuerdo Paritario /Reglamento de Concursos Resolución Ministerial N° 783 M.T. (Res. 1000/13) – Resolución N° 0691/21 CGE y sus modificatorias,- De Director, Resolución N° 1200/22 C.G.E. y modificatorias – De Vicedirector, Resolución N° 1200/22 C.G.E. y modificatorias  – Listado de Suplencias vigentes: Listado de Suplencias de Ascenso N° 188 y el Listado de Suplencias de Ingreso N° 188. Según el siguiente detalle:",
-      "Se desconvoca los siguientes ordenes de cargos ya que algunos presentan duplicados y otros no enmarcan la normativa establecida:",
-      "Orden N°4 “ESCUELA NEP N°75 “GENERAL ALVEAR”",
-      "Se recuerda:",
-      "SE ENCUENTRA HABILITADA LA COBERTURA DE CARGOS POR EL ART. 40 DE LA CONSTITUCIÓN PROVINCIAL.",
-      "Toda necesidad de cobertura de cargos de ingreso originada por el movimiento hacia un cargo de ascenso o mayor jerarquía funcional publicado o convocado a concurso; se cubrirá/cubrirán en el mismo acto concursal.",
-      "Los cargos liberados y/o licenciados se podrán observar sincrónicamente por el siguiente link:"
-    ],
-    "fullContent": ""
-  },
-  {
     "id": "scrape-dept-8g0ixm",
     "title": "Dptal. Pná. –SEGUNDA CONVOCATORIA CONCURSO TALLERES ESCUELA NINA– Supervisión de Nivel primario Zona “B” – ESCUELA PRIMARIA N° 187 NINA.NEP “Argentina Soberana” – CUE 300-1763, Localidad “Crespo”",
     "link": "https://cge.entrerios.gov.ar/2026/03/dptal-pna-segunda-convocatoria-concurso-talleres-escuela-nina-supervision-de-nivel-primario-zona-b-escuela-primaria-n-187-nina-nep-argentina-sobe/",
@@ -1635,6 +1614,23 @@
     "fullContent": ""
   },
   {
+    "id": "scrape-dept-rv0pq2",
+    "title": "Dptal. Pná. Desconvocatoria- llamado a Concurso por presentación de proyectos- Esc. Secundaria Orientada Nº 60 Bicentenario 300- 2679. Crespo.",
+    "link": "https://cge.entrerios.gov.ar/2026/03/dptal-pna-desconvocatoria-llamado-a-concurso-por-presentacion-de-proyectos-esc-secundaria-orientada-no-60-bicentenario-300-2679-crespo-2/",
+    "nivel": "Secundario",
+    "date": "2026-03-14T02:59:00.000Z",
+    "department": "Crespo",
+    "originalText": "Dptal. Pná. Desconvocatoria- llamado a Concurso por presentación de proyectos- Esc. Secundaria Orientada Nº 60 Bicentenario 300- 2679. Crespo.",
+    "materias": [
+      "La rectoría de la Escuela Secundaria Nº 60 “Bicentenario” con Orientación en Programación y Robótica, CUE 300-2679 sito en Sarmiento 2200 de la localidad de Crespo, desconvoca concurso según Acuerdo Paritario 783/12 M.T y sus modificatorias, Res. Nº 2300/22 C.G.E, Resolución N° 3735/25 C.G.E., Circular 13/25 JC y Circular  02/26 JC de C.G.E.  a las siguientes horas cátedras, por presentación de proyectos:",
+      "851921 3 hs de  Introducción a la Robótica  en 4° B C.O. T:T.. STF. Los días martes de 13:00 hs a 13:40 hs y de 15:50 a 16:30 hs. y de 16:40 a 17:15 hs."
+    ],
+    "plazas": [
+      "851921 3 hs de  Introducción a la Robótica  en 4° B C.O. T:T.. STF. Los días martes de 13:00 hs a 13:40 hs y de 15:50 a 16:30 hs. y de 16:40 a 17:15 hs."
+    ],
+    "fullContent": ""
+  },
+  {
     "id": "scrape-dept-ssfk5m",
     "title": "DPTAL. PNÁ.- CONVOCATORIA CONCURSO – TALLERES ESCUELA NINA. Supervisión de Nivel Primaria Zona C. ESCUELA PRIMARIA NINA N° 88 BARTOLOMÉ MITRE, CUE 3001918- PARANÁ-",
     "link": "https://cge.entrerios.gov.ar/2026/03/dptal-pna-convocatoria-concurso-talleres-escuela-nina-supervision-de-nivel-primaria-zona-c-escuela-primaria-nina-n-88-bartolome-mitre-cue-3001918-localidad-parana-5/",
@@ -1953,73 +1949,6 @@
       "8hs. 5to “C” lunes a viernes 12.30 a 13.50h",
       "8hs. 6to “A” lunes a viernes 12.30 a 13.50h",
       "8hs. 6to “B” lunes a viernes 12.30 a 13.50h"
-    ],
-    "fullContent": ""
-  },
-  {
-    "id": "scrape-dept-fcu3xc",
-    "title": "Dptal. Pná. Llamado a concurso por proyecto. Escuela Primaria NINA N°208 “Int. J.C Esparza” CUE 3002522. Localidad Paraná",
-    "link": "https://cge.entrerios.gov.ar/2026/03/dptal-pna-llamado-a-concurso-por-proyecto-escuela-primaria-nina-n208-int-j-c-esparza-cue-3002522-localidad-parana/",
-    "nivel": "Primario",
-    "date": "2026-03-03T02:59:00.000Z",
-    "department": "Paraná Ciudad",
-    "originalText": "Dptal. Pná. Llamado a concurso por proyecto. Escuela Primaria NINA N°208 “Int. J.C Esparza” CUE 3002522. Localidad Paraná",
-    "materias": [],
-    "plazas": [
-      "Dptal. Pná. Llamado a concurso por proyecto. Escuela Primaria NINA N°208 “Int. J.C Esparza” CUE 3002522. Localidad Paraná",
-      "La Dirección de la Escuela Primaria NINA N°208 “Int. J.C Esparza” CUE 3002522, de la localidad de Paraná, llama a concurso por Presentación de Proyectos, según reglamentación vigente:  Resolución 0300/12 C.G.E., Resolución 0355/12 C.G.E, Resolución 5010/18 C.G.E. en el marco del proyecto de mejora e inclusión en la Educación Primaria “Escuelas Nina”",
-      "2 hs Horario: 12:30 hs a15:30 hs – Turno Tarde.",
-      "2 hs Horario: 12:30 hs a15:30 hs – Turno Tarde.",
-      "2 hs Horario: 12:30 hs a15:30 hs – Turno Tarde.",
-      "2 hs Horario: 12:30 hs a15:30 hs – Turno Tarde.",
-      "2 hs Horario: 12:30 hs a15:30 hs – Turno Tarde.",
-      "2 hs Horario: 12:30 hs a 15:30 hs – Turno Tarde.",
-      "2 hs Horario: 12:30 hs a 15:30 hs – Turno Tarde",
-      "2 hs Horario: 12:30 hs a 15:30 hs – Turno Tarde.",
-      "2 hs Horario: 12:30 hs a 15:30 hs – Turno Tarde.",
-      "2 hs Horario: 12:30 hs a15:30 hs – Turno Tarde.",
-      "2 hs Horario: 12:30 hs a 15:30 hs – Turno Tarde.",
-      "2 hs Horario: 12:30 hs a 15:30 hs – Turno Tarde",
-      "2hs. Horario: 12:30 hs a15:30 hs – Turno Tarde.",
-      "2hs. Horario: 12:30 hs a15:30 hs – Turno Tarde.",
-      "2hs. Horario: 12:30 hs a15:30 hs – Turno Tarde.",
-      "2hs. Horario: 12:30 hs a15:30 hs – Turno Tarde.",
-      "2hs. Horario: 12:30 hs a15:30 hs – Turno Tarde.",
-      "2hs. Horario: 12:30 hs a15:30 hs – Turno Tarde",
-      "8hs. 4to “A” lunes a viernes, de 12.30 a 13.50h",
-      "8hs. 4to “B” lunes a viernes, de 12.30 a 13.50h",
-      "8hs. 5to “A” lunes a viernes 12.30 a 13.50h",
-      "8hs. 5to “B” lunes a viernes 12.30 a 13.50h",
-      "8hs. 5to “C” lunes a viernes 12.30 a 13.50h",
-      "8hs. 6to “A” lunes a viernes 12.30 a 13.50h",
-      "8hs. 6to “B” lunes a viernes 12.30 a 13.50h",
-      "Los interesados podrán solicitar las bases al correo de la escuela: primaria208.pn@entrerios.edu.ar o a la dirección del establecimiento sito en calle Alberto Ginastera y Mosconi s/n. en el horario de 8 a 16h. a partir del 9 al 13 de marzo del 2026.",
-      "Los proyectos se recepcionarán en la dirección de la escuela del 16 al 20 de marzo 2026."
-    ],
-    "fullContent": ""
-  },
-  {
-    "id": "scrape-dept-evi6yt",
-    "title": "Dptal. Pná.- Llamado a concurso por proyecto- Escuela Primaria NINA /NEP Nº 133 “Gregoria Pérez” CUE 300-1811 Localidad “Paraná”-",
-    "link": "https://cge.entrerios.gov.ar/2026/03/dptal-pna-llamado-a-concurso-por-proyecto-escuela-primaria-nina-nep-no-133-gregoria-perez-cue-300-1811-localidad-parana-2/",
-    "nivel": "Primario",
-    "date": "2026-03-03T02:59:00.000Z",
-    "department": "Paraná Ciudad",
-    "originalText": "Dptal. Pná.- Llamado a concurso por proyecto- Escuela Primaria NINA /NEP Nº 133 “Gregoria Pérez” CUE 300-1811 Localidad “Paraná”-",
-    "materias": [],
-    "plazas": [
-      "Dptal. Pná.- Llamado a concurso por proyecto- Escuela Primaria NINA /NEP Nº 133 “Gregoria Pérez” CUE 300-1811 Localidad “Paraná”-",
-      "La Dirección de la Escuela Primaria NINA /NEP Nº 133 “Gregoria Pérez” CUE 300-1811 Localidad “Paraná”, Provincia de Entre Ríos, llama a concurso por Presentación",
-      "de Proyectos del siguiente espacio curricular de clases presenciales Resolución N°0355/12 y Resolución Nº0300/12, Resolución N°5010/18 CGE, en el marco del PROYECTO DE MEJORA E INCLUSIÓN EN LA EDUCACIÓN PRIMARIA ESCUELAS NINA.",
-      "10hs. “ LENGUAS EXTRANJERAS – INGLÉS”",
-      "AGRUPAMIENTO: 5° “A” Lunes de 12:30 hs a 13:50 hs-",
-      "AGRUPAMIENTO: 5° “B” Viernes de 11:10 hs a 12:30 hs",
-      "AGRUPAMIENTO: 6° “A” Lunes de 14:00hs a 15:20 hs.",
-      "AGRUPAMIENTO: 6°”B” Viernes de 12:30 hs a 13:50 hs.",
-      "AGRUPAMIENTO: 6° “C” y “D” Viernes de 9:40 hs a 11 hs.",
-      "Los interesados deberán solicitar las BASES, enviando un correo a la siguiente dirección: escprim133gregoriaperez@gmail.com o en sede de la Escuela, sita en calle Mastronardi 934 de la Localidad de Paraná a partir del día 03/03/2026 al 10/03/2026 en el horario de 10 A 14 hs.",
-      "Proyecto de una propuesta pedagógica del Taller a Concursar, en formato digital y papel, en hoja tamaño A4 y letra Arial o Times New Roman, en sobre cerrado firmado con seudónimo. Este proyecto deberá estar encuadrado en el marco de las BASES que la Escuela ha elaborado.",
-      "La recepción de los Currículum vítae y de los Proyectos se realizará hasta el día martes 10/03/2026 en formato papel en el establecimiento."
     ],
     "fullContent": ""
   }
