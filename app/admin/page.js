@@ -77,7 +77,14 @@ export default function AdminPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err) {
-      setLoginError('Credenciales inválidas o error de conexión.');
+      console.error("Login error:", err);
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setLoginError('Email o contraseña incorrectos.');
+      } else if (err.code === 'auth/operation-not-allowed') {
+        setLoginError('Error: El inicio de sesión con Email/Password no está habilitado en Firebase.');
+      } else {
+        setLoginError('Error: ' + err.message);
+      }
     }
   };
 
@@ -160,7 +167,7 @@ export default function AdminPage() {
           <h1 className="text-2xl font-bold text-white mb-2 text-center">Panel Admin</h1>
           <p className="text-gray-400 mb-8 text-center text-sm">Gestiona los concursos del DDE Paraná</p>
           
-          <form onSubmit={handleLogin} className="space-y-6">
+          <div className="space-y-6">
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Email</label>
               <input 
@@ -169,7 +176,6 @@ export default function AdminPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@ejemplo.com"
                 className="w-full bg-[#111] border border-[#333] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
-                required
               />
             </div>
             <div>
@@ -180,7 +186,6 @@ export default function AdminPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="w-full bg-[#111] border border-[#333] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
-                required
               />
             </div>
             
@@ -191,12 +196,13 @@ export default function AdminPage() {
             )}
             
             <button 
-              type="submit" 
+              type="button"
+              onClick={handleLogin}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98]"
             >
               Iniciar Sesión
             </button>
-          </form>
+          </div>
         </div>
       </div>
     );
