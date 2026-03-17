@@ -378,6 +378,24 @@ export default function AdminPage() {
                     <option>Otro</option>
                   </select>
                 </div>
+                <div>
+                  <label style={{display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase'}}>Dirección (para GPS)</label>
+                  <input 
+                    style={{width: '100%', background: '#000', border: '1px solid #333', borderRadius: '12px', padding: '12px 16px', color: '#fff', outline: 'none'}}
+                    value={editForm.location || ''} 
+                    placeholder="Ej: Laprida 451, Paraná"
+                    onChange={e => setEditForm({...editForm, location: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label style={{display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase'}}>Enlace CGE (Copia la URL aquí)</label>
+                  <input 
+                    style={{width: '100%', background: '#000', border: '1px solid #333', borderRadius: '12px', padding: '12px 16px', color: '#fff', outline: 'none'}}
+                    value={editForm.link || ''} 
+                    placeholder="https://cge.entrerios.gov.ar/..."
+                    onChange={e => setEditForm({...editForm, link: e.target.value})}
+                  />
+                </div>
                 <div style={{gridColumn: '1 / -1'}}>
                   <label style={{display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase'}}>Contenido Completo (Detalles)</label>
                   <textarea 
