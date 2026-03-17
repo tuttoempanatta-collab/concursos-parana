@@ -23,9 +23,9 @@ try {
     }
 
     // 3. Desplegar solo el archivo de datos a Firebase Hosting
-    // Usamos --only hosting para ser más rápidos
+    // Usamos --only hosting para ser más rápidos y npx para asegurar que firebase esté disponible
     console.log('3. Desplegando en Firebase Hosting...');
-    execSync('firebase deploy --only hosting', { stdio: 'inherit' });
+    execSync('npx firebase deploy --only hosting', { stdio: 'inherit' });
 
     console.log('\n¡ÉXITO! Los nuevos concursos ya están en la nube.');
     console.log('URL de datos: https://concursos-entre-rios.web.app/parsed_data.json');
