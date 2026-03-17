@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "concursos-entre-rios",
     "public": "out",
     "ignore": [
       "firebase.json",
