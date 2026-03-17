@@ -401,7 +401,7 @@ async function scrapeCGEPage(url) {
                 if (!url.includes('departamental-parana') && !href.includes('/2026/') && !href.includes('/2025/')) return null; 
                 
                 const city = classifyCity(text);
-                const level = linkObj.level;
+                let level = linkObj.level;
                 let date = extractEventDate(text, pubDateText); // Use pubDateText as fallback
                 
                 const detailedData = { subjects: [], plazas: [], fullContent: '' };
