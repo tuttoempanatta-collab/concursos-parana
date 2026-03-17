@@ -488,7 +488,8 @@ async function scrapeCGEPage(url) {
 async function run() {
     const results = [];
     const now = new Date();
-    const cutoffDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 14, 0, 0, 0);
+    // Disabled cutoff to allow historical management in Admin Panel
+    // const cutoffDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 14, 0, 0, 0);
 
     const urls = [
         'https://cge.entrerios.gov.ar/concursos-docentes/',
@@ -530,11 +531,7 @@ async function run() {
         }
     }
 
-    let filtered = results.filter(item => {
-        if (!item.date) return true;
-        const itemDate = new Date(item.date);
-        return itemDate.getTime() >= cutoffDate.getTime();
-    });
+    let filtered = results; // No filtering to keep all history for management
 
     const unique = [];
     const linksSeen = new Set();
@@ -561,7 +558,7 @@ async function run() {
     });
 
     fs.writeFileSync('parsed_data.json', JSON.stringify(unique, null, 2));
-    console.log(`\nDONE: Saved ${unique.length} items to parsed_data.json (cut-off: ${cutoffDate.toLocaleDateString()})`);
+    console.log(`\nDONE: Saved ${unique.length} items to parsed_data.json`);
     
     // SYNC TO FIRESTORE
     await syncToFirestore(unique);
