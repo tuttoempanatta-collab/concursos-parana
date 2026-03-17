@@ -109,8 +109,12 @@ export default function AdminPage() {
   const handleUpdate = async () => {
     try {
       const { id, ...data } = editForm;
-      await updateDoc(doc(db, 'concursos', id), data);
-      showStatus('success', 'Concurso actualizado correctamente');
+      await updateDoc(doc(db, 'concursos', id), {
+        ...data,
+        isManual: true,
+        updatedAt: new Date().toISOString()
+      });
+      showStatus('success', 'Concurso actualizado (protegido contra auto-actualización)');
       setEditingId(null);
       fetchFromFirestore();
     } catch (err) {
@@ -123,6 +127,7 @@ export default function AdminPage() {
       await addDoc(collection(db, 'concursos'), {
         ...editForm,
         id: Math.random().toString(36).substr(2, 9), // Fallback ID
+        isManual: true,
         createdAt: new Date().toISOString()
       });
       showStatus('success', 'Nuevo concurso agregado');

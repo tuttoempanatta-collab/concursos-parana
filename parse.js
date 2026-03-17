@@ -568,25 +568,30 @@ async function run() {
 async function syncToFirestore(concursos) {
     console.log('--- SINCRONIZANDO CON FIRESTORE ---');
     try {
-        const batchSize = 500;
-        for (let i = 0; i < concursos.length; i += batchSize) {
-            const batch = db.batch();
-            const chunk = concursos.slice(i, i + batchSize);
+        console.log('Verificando concursos existentes...');
+        const concursosRef = db.collection('concursos');
+        
+        for (const concurso of concursos) {
+            // Deterministic ID based on the link
+            const docId = concurso.link.split('/').pop().replace(/[^a-zA-Z0-9]/g, '_') || Math.random().toString(36).substr(2, 9);
+            const docRef = concursosRef.doc(docId);
             
-            chunk.forEach(concurso => {
-                // Use a deterministic ID based on the link (same as hashString in frontend)
-                const docId = concurso.link.split('/').pop().replace(/[^a-zA-Z0-9]/g, '_') || Math.random().toString(36).substr(2, 9);
-                const docRef = db.collection('concursos').doc(docId);
-                
-                // set with merge: true to avoid overwriting manual edits (though scraper has priority on fields it found)
-                batch.set(docRef, {
-                    ...concurso,
-                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
-            });
+            const docSnap = await docRef.get();
             
-            await batch.commit();
-            console.log(`Batch ${i/batchSize + 1} sincronizado (${chunk.length} items)`);
+            if (docSnap.exists) {
+                const existingData = docSnap.data();
+                if (existingData.isManual) {
+                    // Skip if edited manually by user
+                    console.log(`Skipping manual doc: ${docId}`);
+                    continue;
+                }
+            }
+
+            await docRef.set({
+                ...concurso,
+                isManual: false,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
         }
         console.log('¡Sincronización con Firestore exitosa!');
     } catch (err) {
