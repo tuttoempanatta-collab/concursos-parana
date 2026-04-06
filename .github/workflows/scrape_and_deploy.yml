@@ -27,6 +27,11 @@ jobs:
       - name: Debug - List Files Before
         run: ls -R
 
+      - name: Fix Existing Times
+        run: node fix_times.js
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
       - name: Run Scraper and Sync to Firestore
         run: node parse.js
         env:

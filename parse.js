@@ -93,7 +93,12 @@ function extractEventDate(text, fallbackText, hintYear) {
         let year = match[3] ? parseInt(match[3], 10) : defaultYear;
         if (year < 100) year += 2000;
         
-        return new Date(year, monthIndex, day, timeSet ? timeHours : 23, timeSet ? timeMinutes : 59, 0);
+        let h = timeSet ? timeHours : 23;
+        let m = timeSet ? timeMinutes : 59;
+        
+        // GitHub Actions normally runs in UTC. Argentina is UTC-3.
+        // We inject the time directly into UTC after adding 3 hours.
+        return new Date(Date.UTC(year, monthIndex, day, h + 3, m, 0));
     }
 
     // 2. Try numeric date
@@ -110,7 +115,10 @@ function extractEventDate(text, fallbackText, hintYear) {
             month = day - 1;
             day = temp;
         }
-        return new Date(year, month, day, timeSet ? timeHours : 23, timeSet ? timeMinutes : 59, 0);
+        
+        let h = timeSet ? timeHours : 23;
+        let m = timeSet ? timeMinutes : 59;
+        return new Date(Date.UTC(year, month, day, h + 3, m, 0));
     }
     
     return null;
@@ -186,6 +194,7 @@ async function fetchDetailedInfo(url, urlYear) {
         let specificDate = null;
         let solicitud = null;
         let foundDate = null;
+        let foundTime = null;
 
         for (const line of lines) {
             // 1. SMART DATE DETECTION IN BODY
@@ -193,6 +202,21 @@ async function fetchDetailedInfo(url, urlYear) {
                 const eventDate = extractEventDate(line, null, urlYear);
                 if (eventDate) {
                     foundDate = eventDate; // Just take the first valid date found in the body
+                }
+            }
+            // 2. INDEPENDENT TIME MATCHING (IF DATE WAS FOUND WITHOUT TIME)
+            if (!foundTime) {
+                const tmRegex = /(?:a las\s*)?(\d{1,2})[:,\.]?(\d{2})?\s*(?:hs|horas|h)\b/i;
+                const tmMatch = line.match(tmRegex);
+                if (tmMatch) {
+                    const hStr = tmMatch[1];
+                    // Skip generic fake times like "24 hs" or "48 hs"
+                    if (hStr !== '24' && hStr !== '48' && hStr !== '72') {
+                        foundTime = { 
+                            h: parseInt(hStr, 10), 
+                            m: tmMatch[2] ? parseInt(tmMatch[2], 10) : 0 
+                        };
+                    }
                 }
             }
             if (!solicitud) {
@@ -206,7 +230,13 @@ async function fetchDetailedInfo(url, urlYear) {
                 if (level === 'Secundario') subjects.push(line); else plazas.push(line);
             }
         }
-        if (foundDate) specificDate = foundDate;
+        if (foundDate) {
+            specificDate = foundDate;
+            if (foundTime) {
+                // Adjust timezone for Argentina
+                specificDate.setUTCHours(foundTime.h + 3, foundTime.m, 0, 0);
+            }
+        }
         
         // STRICT YEAR CHECK IN CONTENT
         if (specificDate && specificDate.getFullYear() < TARGET_YEAR) {
