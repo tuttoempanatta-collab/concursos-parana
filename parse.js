@@ -4,30 +4,35 @@ const path = require('path');
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-// Initialize Firebase Admin
-if (!admin.apps.length) {
-    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-        try {
-            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+const IS_LOCAL_ONLY = process.argv.includes('--local-only');
+
+// Initialize Firebase Admin only if not in local-only mode
+let db = null;
+if (!IS_LOCAL_ONLY) {
+    if (!admin.apps.length) {
+        if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+            try {
+                const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+                admin.initializeApp({
+                    credential: admin.credential.cert(serviceAccount),
+                    projectId: 'concursos-entre-rios'
+                });
+                admin.firestore().settings({ ignoreUndefinedProperties: true });
+                console.log('Firebase Admin inicializado con Service Account.');
+            } catch (e) {
+                console.error('Error al parsear FIREBASE_SERVICE_ACCOUNT:', e.message);
+                admin.initializeApp({ projectId: 'concursos-entre-rios' });
+            }
+        } else {
             admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount),
                 projectId: 'concursos-entre-rios'
             });
             admin.firestore().settings({ ignoreUndefinedProperties: true });
-            console.log('Firebase Admin inicializado con Service Account.');
-        } catch (e) {
-            console.error('Error al parsear FIREBASE_SERVICE_ACCOUNT:', e.message);
-            admin.initializeApp({ projectId: 'concursos-entre-rios' });
+            console.log('Firebase Admin inicializado con Project ID (sin credenciales explícitas).');
         }
-    } else {
-        admin.initializeApp({
-            projectId: 'concursos-entre-rios'
-        });
-        admin.firestore().settings({ ignoreUndefinedProperties: true });
-        console.log('Firebase Admin inicializado con Project ID (sin credenciales explícitas).');
     }
+    db = admin.firestore();
 }
-const db = admin.firestore();
 
 const TARGET_YEAR = 2026;
 const EXCLUDED_URLS = [
@@ -280,7 +285,7 @@ async function scrapeCGEPage(url) {
             const level = classifyLevel(text);
             let date = extractEventDate(text, pubDateText, urlYear);
             
-            if (globalDeepScrapeCount < 600) {
+            if (globalDeepScrapeCount < 100) {
                 globalDeepScrapeCount++;
                 const details = await fetchDetailedInfo(href, urlYear);
                 
@@ -314,10 +319,20 @@ async function scrapeCGEPage(url) {
 }
 
 async function run() {
-    console.log("Fetching blacklist (deleted_ids)...");
-    const blacklistSnap = await db.collection('concursos_eliminados').get();
-    const blacklist = new Set(blacklistSnap.docs.map(doc => doc.id));
-    console.log(`Blacklist has ${blacklist.size} items.`);
+    let blacklist = new Set();
+    
+    if (!IS_LOCAL_ONLY && db) {
+        console.log("Fetching blacklist (deleted_ids)...");
+        try {
+            const blacklistSnap = await db.collection('concursos_eliminados').get();
+            blacklist = new Set(blacklistSnap.docs.map(doc => doc.id));
+            console.log(`Blacklist has ${blacklist.size} items.`);
+        } catch (e) {
+            console.log("Error fetching blacklist, continuing with empty blacklist.", e.message);
+        }
+    } else {
+        console.log("Local only mode: skipping blacklist fetch.");
+    }
 
     const results = [];
     const urls = ['https://cge.entrerios.gov.ar/concursos-docentes/', 'https://cge.entrerios.gov.ar/departamental-parana/'];
@@ -377,7 +392,12 @@ async function run() {
     fs.writeFileSync(path.join('out', 'parsed_data.json'), JSON.stringify(unique, null, 2));
 
     console.log(`\nDONE: Saved ${unique.length} items.`);
-    await syncToFirestore(unique);
+    
+    if (!IS_LOCAL_ONLY) {
+        await syncToFirestore(unique);
+    } else {
+        console.log("Local only mode: skipped Firestore sync.");
+    }
 }
 
 async function syncToFirestore(concursos) {
