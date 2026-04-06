@@ -421,18 +421,25 @@ export default function Home() {
     return levelMatch && searchMatch && hideMatch;
   });
 
-  const concursosNuevos = filteredConcursos.filter(c => {
-    return c.pubDate === todayStr;
-  });
+  const isNovedad = (c) => {
+    if (c.pubDate !== todayStr) return false;
+    if (!c.date) return true;
+    const d = new Date(c.date);
+    const yesterday = new Date(startOfToday.getTime() - 86400000);
+    // Not a novelty if the event already happened more than a day ago
+    return d >= yesterday;
+  };
+
+  const concursosNuevos = filteredConcursos.filter(c => isNovedad(c));
 
   const concursosHoy = filteredConcursos.filter(c => {
-    if (!c.date || c.pubDate === todayStr) return false;
+    if (!c.date || isNovedad(c)) return false;
     const d = new Date(c.date);
     return d >= startOfToday && d < new Date(startOfToday.getTime() + 86400000);
   });
 
   const concursosManana = filteredConcursos.filter(c => {
-    if (!c.date || c.pubDate === todayStr) return false;
+    if (!c.date || isNovedad(c)) return false;
     const d = new Date(c.date);
     const startOfTomorrow = new Date(startOfToday.getTime() + 86400000);
     const startOfDayAfter = new Date(startOfToday.getTime() + 172800000);
@@ -440,21 +447,21 @@ export default function Home() {
   });
 
   const concursosFuturos = filteredConcursos.filter(c => {
-    if (!c.date) return true; 
-    if (c.pubDate === todayStr) return false;
+    if (!c.date) return !isNovedad(c); 
+    if (isNovedad(c)) return false;
     const d = new Date(c.date);
     const startOfDayAfter = new Date(startOfToday.getTime() + 172800000);
     return d >= startOfDayAfter;
   });
 
   const concursosRecientes = filteredConcursos.filter(c => {
-    if (!c.date || c.pubDate === todayStr) return false;
+    if (!c.date || isNovedad(c)) return false;
     const d = new Date(c.date);
     return d < startOfToday && d >= cutoffDate; 
   });
 
   const concursosVencidos = filteredConcursos.filter(c => {
-    if (!c.date) return false;
+    if (!c.date || isNovedad(c)) return false;
     const d = new Date(c.date);
     return d < cutoffDate; // Truly expired
   });
