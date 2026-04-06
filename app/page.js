@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import ConcursoCard from './components/ConcursoCard';
-import { RefreshCw, Search as SearchIcon, Heart, X, Users } from 'lucide-react';
+import { RefreshCw, Search, Heart, X, Users } from 'lucide-react';
 
 import { db } from '../firebase.config';
-import { collection, getDocs, query, orderBy, doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, getDoc, setDoc, updateDoc, increment, onSnapshot } from 'firebase/firestore';
 
 export default function Home() {
   const [concursos, setConcursos] = useState([]);
@@ -16,7 +16,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   
   // Visibility State
-  const [hideInactive, setHideInactive] = useState(true);
+  const [hideInactive, setHideInactive] = useState(false);
   const [hiddenCardIds, setHiddenCardIds] = useState([]);
   
   // Filter state
@@ -35,6 +35,7 @@ export default function Home() {
   // Social/Analytics State
   const [visitorCount, setVisitorCount] = useState(0);
   const [showDonate, setShowDonate] = useState(false);
+  const [robotStatus, setRobotStatus] = useState(null);
 
   // Persistence: Load hidden IDs on mount
   useEffect(() => {
@@ -79,29 +80,55 @@ export default function Home() {
     handleVisitor();
   }, []);
 
+  // Robot Status Listener
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'system', 'robot_status'), (snap) => {
+      if (snap.exists()) setRobotStatus(snap.data());
+    });
+    return () => unsub();
+  }, []);
+
   const fetchConcursos = async () => {
     let finalData = [];
     try {
       setLoading(true);
       setError(null);
       
-      // 1. TRY FIRESTORE FIRST (Cloud sync, live data)
+      let data = [];
       try {
-        console.log("Fetching from Firestore...");
+        console.log("Attempting Firestore fetch...");
         const q = query(collection(db, 'concursos'), orderBy('pubDate', 'desc'));
-        const querySnapshot = await getDocs(q);
+        
+        // Timeout to avoid hang
+        const fetchPromise = getDocs(q);
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Firestore timeout")), 4000));
+        
+        const querySnapshot = await Promise.race([fetchPromise, timeoutPromise]);
         if (!querySnapshot.empty) {
-            const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setConcursos(data);
-            setLoading(false);
-            return; // SUCCESS!
+            data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            console.log(`[DEBUG] Firestore returned ${data.length} docs.`);
         }
       } catch (dbError) {
-        console.warn("Firestore fetch failed, falling back...", dbError);
+        console.warn("Firestore fetch error/timeout, fallback incoming:", dbError);
       }
 
-      // 2. FALLBACK TO STATIC JSON (If Firestore is empty or fails)
-      const FIREBASE_DATA_URL = 'https://concursos-entre-rios.web.app/parsed_data.json';
+      // FALLBACK TO STATIC JSON
+      if (data.length === 0) {
+        try {
+          console.log("Fetching static JSON fallback...");
+          const res = await fetch('/parsed_data.json');
+          data = await res.json();
+          console.log(`[DEBUG] Loaded ${data.length} items from JSON fallback.`);
+        } catch (jsonError) {
+          console.error("Static JSON fallback failed:", jsonError);
+        }
+      }
+
+      if (data.length > 0) {
+          setConcursos(data);
+          setLoading(false);
+          if (!Capacitor.isNativePlatform()) return; // On web, we are done with static data
+      }
 
       if (Capacitor.isNativePlatform()) {
         const urls = [
@@ -131,7 +158,7 @@ export default function Home() {
             
             const match = cleanText.match(dateRegex);
             const numMatch = cleanText.match(numRegex);
-            const tmRegex = /(?:a las\s*)?(\d{1,2})[:,\.]?(\d{2})?\s*(?:hs|horas|h)/i;
+            const tmRegex = /(?:a las\s*)?(\d{1,2})[:,\.](\d{2})\s*(?:hs|horas|h)?|(\d{1,2})\s*(?:hs|horas|h)/i;
             const tmMatch = cleanText.match(tmRegex);
             let h = 0, m = 0, tSet = false;
 
@@ -144,7 +171,7 @@ export default function Home() {
             const curYear = urlYear || new Date().getFullYear();
 
             if (tmMatch) {
-               h = parseInt(tmMatch[1], 10);
+               h = tmMatch[1] ? parseInt(tmMatch[1], 10) : parseInt(tmMatch[3], 10);
                m = tmMatch[2] ? parseInt(tmMatch[2], 10) : 0;
                tSet = true;
             }
@@ -169,12 +196,12 @@ export default function Home() {
             return null;
         };
 
-        const now = new Date();
-        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-        const endOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 23, 59, 59);
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - 30);
 
         for (const url of urls) {
           const response = await CapacitorHttp.get({ url });
+          if (typeof window === 'undefined') continue;
           const parser = new DOMParser();
           const doc = parser.parseFromString(response.data, 'text/html');
           const links = doc.querySelectorAll('a');
@@ -210,8 +237,10 @@ export default function Home() {
                   if (!isParana) return;
                   if (!url.includes('departamental-parana') && !fullHref.includes('/2026/') && !fullHref.includes('/2025/')) return;
                        const eventDate = extractEventDate(text, fullHref);
+                       if (eventDate && eventDate < cutoffDate) return; 
+
                      let priority = 3;
-                      if (eventDate && eventDate >= startOfToday && eventDate <= endOfTomorrow) priority = 1;
+                      if (eventDate && eventDate >= new Date().setHours(0,0,0,0) && eventDate <= new Date().setHours(47,59,59,999)) priority = 1;
                       else if (nivel === 'Secundario' && !eventDate) priority = 1;
                       else if (eventDate && eventDate > endOfTomorrow) priority = 2;
                      
@@ -240,6 +269,7 @@ export default function Home() {
             const it = scrapedConcursos[i];
             try {
               const res = await CapacitorHttp.get({ url: it.link });
+              if (typeof window === 'undefined') continue;
               const dDoc = new DOMParser().parseFromString(res.data, 'text/html');
               
               // REMOVE SCRIPTS AND STYLES before extracting text
@@ -258,7 +288,7 @@ export default function Home() {
 
               it.fullContent = dText; 
 
-              const tmRegex = /(\d{1,2})[:,\.](\d{2})\s*(?:hs|horas|h)?|(\d{1,2})\s*(?:hs|horas|h)/i;
+              const tmRegex = /(?:a las\s*)?(\d{1,2})[:,\.](\d{2})\s*(?:hs|horas|h)?|(\d{1,2})\s*(?:hs|horas|h)/i;
               const tmMatch = dText.match(tmRegex);
               if (tmMatch && it.date) {
                   const d = new Date(it.date);
@@ -298,6 +328,7 @@ export default function Home() {
         finalData = scrapedConcursos;
       } else {
         // --- WEB BROWSER SCRAPING (API Route) ---
+        if (typeof window === 'undefined') return;
         const res = await fetch('/api/concursos');
         const data = await res.json();
         if (data.success) {
@@ -307,8 +338,15 @@ export default function Home() {
         }
       }
       
-      // Sort by date (closest first)
-      const sorted = finalData.sort((a, b) => new Date(a.date) - new Date(b.date));
+      // Sort by original CGE publication order (0 is newest)
+      const sorted = finalData.sort((a, b) => {
+          const orderA = typeof a.cgeOrder === 'number' ? a.cgeOrder : 9999;
+          const orderB = typeof b.cgeOrder === 'number' ? b.cgeOrder : 9999;
+          if (orderA !== orderB) return orderA - orderB;
+          
+          // Fallback to event date
+          return new Date(a.date) - new Date(b.date);
+      });
       setConcursos(sorted);
       
     } catch (err) {
@@ -362,47 +400,63 @@ export default function Home() {
     setHiddenCardIds([]);
   };
 
+  const now = new Date();
+  const cutoffDate = new Date();
+  cutoffDate.setDate(now.getDate() - 30);
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  const todayStr = now.toISOString().split('T')[0];
+
   const filteredConcursos = concursos.filter(c => {
     const levelMatch = activeFilters[c.nivel] || (c.nivel === 'No especificado' && activeFilters['Otro']);
     const searchMatch = searchQuery === '' || 
       c.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
       c.department.toLowerCase().includes(searchQuery.toLowerCase());
       
-    const isInactive = c.date && new Date(c.date) < new Date(new Date().setHours(0,0,0,0));
-    const hideMatch = !(hideInactive && isInactive) && !hiddenCardIds.includes(c.id);
+    const docDate = c.date ? new Date(c.date) : null;
+    const isTooOld = docDate && docDate < cutoffDate;
+    
+    // hideMatch: Hide if (Too Old AND user wants to hide inactive) OR (Hidden manually)
+    const hideMatch = !(hideInactive && isTooOld) && !hiddenCardIds.includes(c.id);
       
     return levelMatch && searchMatch && hideMatch;
   });
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const dayAfterTomorrow = new Date(today);
-  dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+  const concursosNuevos = filteredConcursos.filter(c => {
+    return c.pubDate === todayStr;
+  });
 
   const concursosHoy = filteredConcursos.filter(c => {
-    if (!c.date) return false;
+    if (!c.date || c.pubDate === todayStr) return false;
     const d = new Date(c.date);
-    return d >= today && d < tomorrow;
+    return d >= startOfToday && d < new Date(startOfToday.getTime() + 86400000);
   });
 
   const concursosManana = filteredConcursos.filter(c => {
-    if (!c.date) return false;
+    if (!c.date || c.pubDate === todayStr) return false;
     const d = new Date(c.date);
-    return d >= tomorrow && d < dayAfterTomorrow;
+    const startOfTomorrow = new Date(startOfToday.getTime() + 86400000);
+    const startOfDayAfter = new Date(startOfToday.getTime() + 172800000);
+    return d >= startOfTomorrow && d < startOfDayAfter;
   });
 
   const concursosFuturos = filteredConcursos.filter(c => {
-    if (!c.date) return true; // Items without date are shown in future/general
+    if (!c.date) return true; 
+    if (c.pubDate === todayStr) return false;
     const d = new Date(c.date);
-    return d >= dayAfterTomorrow;
+    const startOfDayAfter = new Date(startOfToday.getTime() + 172800000);
+    return d >= startOfDayAfter;
   });
 
-  const concursosPasados = filteredConcursos.filter(c => {
+  const concursosRecientes = filteredConcursos.filter(c => {
+    if (!c.date || c.pubDate === todayStr) return false;
+    const d = new Date(c.date);
+    return d < startOfToday && d >= cutoffDate; 
+  });
+
+  const concursosVencidos = filteredConcursos.filter(c => {
     if (!c.date) return false;
     const d = new Date(c.date);
-    return d < today;
+    return d < cutoffDate; // Truly expired
   });
 
   return (
@@ -412,12 +466,54 @@ export default function Home() {
            <h1>Concursos Docentes</h1>
            <p>Gestión ágil y dinámica para el Departamento Paraná</p>
         </div>
-        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem'}}>
+        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem'}}>
           <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
             <a href="/admin" style={{fontSize: '0.7rem', color: 'rgba(255,255,255,0.05)', textDecoration: 'none'}}>Admin</a>
-            <div style={{background: 'rgba(255,255,255,0.1)', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)'}}>
-              v2.1
+            <div style={{background: 'rgba(255,255,255,0.1)', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-muted)'}}>
+              v2.4.9-ROBOT-MONITOR-V2
             </div>
+          </div>
+          
+          {/* Robot Heartbeat UI */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '6px', 
+            padding: '4px 8px', background: 'rgba(255,255,255,0.03)',
+            borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)'
+          }}>
+            {(() => {
+              const getStatusInfo = (status) => {
+                if (!status || !status.lastSync) return { color: '#64748b', text: '...' };
+                
+                let lastSyncDate;
+                if (status.lastSync.seconds) {
+                  lastSyncDate = new Date(status.lastSync.seconds * 1000);
+                } else {
+                  lastSyncDate = new Date(status.lastSync);
+                }
+                
+                const diffMs = new Date() - lastSyncDate;
+                const diffHours = diffMs / (1000 * 60 * 60);
+                
+                if (diffHours < 1.2) return { color: '#10b981', text: `Sincronizado: ${lastSyncDate.toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'})}` };
+                if (diffHours < 24) return { color: '#f59e0b', text: `Última sinc: ${lastSyncDate.toLocaleDateString('es-AR', {day: '2-digit', month:'short'})}` };
+                return { color: '#ef4444', text: 'Robot Desconectado' };
+              };
+              
+              const info = getStatusInfo(robotStatus);
+              
+              return (
+                <>
+                  <div style={{
+                    width: '6px', height: '6px', borderRadius: '50%',
+                    background: info.color,
+                    boxShadow: `0 0 5px ${info.color}`
+                  }}></div>
+                  <span style={{fontSize: '0.65rem', fontWeight: 700, color: info.color, textTransform: 'uppercase', letterSpacing: '0.02em'}}>
+                    {info.text}
+                  </span>
+                </>
+              );
+            })()}
           </div>
           <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
             <div style={{display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: 0.6, fontSize: '0.7rem', color: 'var(--text-muted)'}}>
@@ -466,7 +562,7 @@ export default function Home() {
           </div>
 
           <div style={{position: 'relative', marginBottom: '1.5rem'}}>
-            <SearchIcon size={18} style={{position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)'}} />
+            <Search size={18} style={{position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)'}} />
             <input 
               type="text" 
               placeholder="Buscar escuela, localidad..." 
@@ -572,6 +668,25 @@ export default function Home() {
             </div>
           ) : (
             <div style={{display: 'flex', flexDirection: 'column', gap: '2.5rem'}}>
+               {concursosNuevos.length > 0 && (
+                <div>
+                  <h2 style={{marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#f472b6'}}>
+                    <span style={{width: '12px', height: '12px', borderRadius: '50%', background: '#f472b6', boxShadow: '0 0 10px #f472b6'}}></span>
+                    Novedades del día (Recién Publicados)
+                  </h2>
+                  <div className="concursos-grid">
+                    {concursosNuevos.map(concurso => (
+                      <ConcursoCard 
+                        key={concurso.id} 
+                        concurso={concurso} 
+                        onHide={() => handleHideCard(concurso.id)}
+                        userLocation={userLocation}
+                        isNew={true}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
               {concursosHoy.length > 0 && (
                 <div>
                   <h2 style={{marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#34d399'}}>
@@ -585,6 +700,7 @@ export default function Home() {
                         concurso={concurso} 
                         onHide={() => handleHideCard(concurso.id)}
                         userLocation={userLocation}
+                        isToday={true}
                       />
                     ))}
                   </div>
@@ -629,19 +745,40 @@ export default function Home() {
                 </div>
               )}
 
-              {concursosPasados.length > 0 && !hideInactive && (
+              {concursosRecientes.length > 0 && (
                 <div>
-                  <h2 style={{marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-muted)'}}>
-                    <span style={{width: '12px', height: '12px', borderRadius: '50%', background: 'var(--text-muted)'}}></span>
-                    Concursos Pasados
+                  <h2 style={{marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#fb923c'}}>
+                    <span style={{width: '12px', height: '12px', borderRadius: '50%', background: '#fb923c', boxShadow: '0 0 10px #fb923c'}}></span>
+                    Concursos Recientes (Activos)
                   </h2>
-                  <div className="concursos-grid" style={{opacity: 0.7}}>
-                    {concursosPasados.map(concurso => (
+                  <div className="concursos-grid">
+                    {concursosRecientes.map(concurso => (
                       <ConcursoCard 
                         key={concurso.id} 
                         concurso={concurso} 
                         onHide={() => handleHideCard(concurso.id)}
                         userLocation={userLocation}
+                        isRecent={true}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {concursosVencidos.length > 0 && !hideInactive && (
+                <div>
+                  <h2 style={{marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-muted)'}}>
+                    <span style={{width: '12px', height: '12px', borderRadius: '50%', background: 'var(--text-muted)'}}></span>
+                    Concursos Vencidos
+                  </h2>
+                  <div className="concursos-grid" style={{opacity: 0.7}}>
+                    {concursosVencidos.map(concurso => (
+                      <ConcursoCard 
+                        key={concurso.id} 
+                        concurso={concurso} 
+                        onHide={() => handleHideCard(concurso.id)}
+                        userLocation={userLocation}
+                        isExpired={true}
                       />
                     ))}
                   </div>

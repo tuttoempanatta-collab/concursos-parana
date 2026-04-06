@@ -267,6 +267,9 @@ async function scrapeCGEPage(url) {
         console.log(`- Found ${links.length} potential links on ${url}`);
         const now = new Date();
         
+        // Save original CGE order before sorting!
+        links.forEach((l, idx) => { l.cgeOrder = idx; });
+        
         // Prioritize links containing TARGET_YEAR (like /2026/)
         links.sort((a, b) => {
             const isTargetA = a.href.includes(`/${TARGET_YEAR}/`) ? 1 : 0;
@@ -307,7 +310,8 @@ async function scrapeCGEPage(url) {
                     materias: details.subjects,
                     plazas: details.plazas,
                     fullContent: details.fullTextContent || '',
-                    solicitud: details.solicitud
+                    solicitud: details.solicitud,
+                    cgeOrder: linkObj.cgeOrder
                 });
             }
         }
@@ -422,6 +426,10 @@ async function syncToFirestore(concursos) {
             if (isEliminated.exists) {
                 console.log(`[BLACKLIST] Saltando concurso eliminado: ${docId}`);
                 continue;
+            }
+            // PREVENT OVERWRITING ORIGINAL PUB DATE AND MANUAL FIELDS
+            if (snap.exists) {
+                delete c.pubDate; // Keep the original creation date so we don't spam 'Novedades'
             }
             
             batch.set(docRef, { ...c, isManual: false, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
