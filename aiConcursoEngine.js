@@ -137,6 +137,24 @@ function extractMultiLlamados(text) {
         }
     }
 
+    // Format C: "• A las 11:00. 1° llamado." / "A las 11:15. 1° llamado."
+    if (llamados.length === 0) {
+        const regexC = /(?:•|\*|-)?\s*(?:a\s*las|a\s*partir\s*de\s*las)?\s*(\d{1,2}[:\.]\d{2})[\s\.]+(\d+[°º]?\s*llamado|primer\s*llamado|segundo\s*llamado|tercer\s*llamado)/gi;
+        while ((match = regexC.exec(text)) !== null) {
+            const rawTime = match[1].trim().replace('.', ':');
+            const rawCall = match[2].trim();
+            let timeNorm = rawTime;
+            if (!timeNorm.includes(':')) timeNorm = `${timeNorm}:00`;
+            llamados.push({
+                llamado: rawCall.replace(/primer\s*llamado/i, '1° Llamado').replace(/segundo\s*llamado/i, '2° Llamado'),
+                time: timeNorm,
+                materia: null,
+                hsCatedra: null,
+                rawSnippet: match[0]
+            });
+        }
+    }
+
     let primaryLlamado = null;
     let llamadosSummary = null;
 
@@ -174,6 +192,100 @@ function extractMultiLlamados(text) {
 }
 
 /**
+ * Extracts job character designations (STF, STV, SCV, TIT) with formal definitions
+ */
+function extractCaracteres(text) {
+    const list = [];
+    const seen = new Set();
+    
+    if (/\bSTF\b|suplente\s*t[eé]rmino\s*fijo/i.test(text)) {
+        if (!seen.has('STF')) {
+            list.push({
+                codigo: 'STF',
+                nombre: 'Suplente Término Fijo',
+                descripcion: 'Reemplazo transitorio por licencia reglamentaria',
+                badgeColor: '#38bdf8',
+                badgeBg: 'rgba(56, 189, 248, 0.15)'
+            });
+            seen.add('STF');
+        }
+    }
+    if (/\bSTV\b|suplente\s*t[eé]rmino\s*vacante/i.test(text)) {
+        if (!seen.has('STV')) {
+            list.push({
+                codigo: 'STV',
+                nombre: 'Suplente Término Vacante',
+                descripcion: 'Suplencia sobre horas o cargos vacantes sin titular definitivo',
+                badgeColor: '#a855f7',
+                badgeBg: 'rgba(168, 85, 247, 0.15)'
+            });
+            seen.add('STV');
+        }
+    }
+    if (/\bSCV\b|suplente\s*cargo\s*vacante/i.test(text)) {
+        if (!seen.has('SCV')) {
+            list.push({
+                codigo: 'SCV',
+                nombre: 'Suplente Cargo Vacante',
+                descripcion: 'Suplencia en cargo vacante',
+                badgeColor: '#ec4899',
+                badgeBg: 'rgba(236, 72, 153, 0.15)'
+            });
+            seen.add('SCV');
+        }
+    }
+
+    let caracterSummary = null;
+    if (list.length === 1) {
+        caracterSummary = `${list[0].codigo} (${list[0].nombre})`;
+    } else if (list.length > 1) {
+        caracterSummary = list.map(c => `${c.codigo} (${c.nombre})`).join(' / ');
+    }
+
+    return { caracteres: list, caracterSummary };
+}
+
+/**
+ * Extracts realistic contest event time (between 07:00 and 22:30), excluding class hours
+ */
+function extractValidContestTime(cleanText) {
+    if (!cleanText) return null;
+
+    // 1. Format with llamado: "A las 11:00. 1° llamado" or "11:30 hs 1° llamado"
+    const callTime = cleanText.match(/(?:a\s*las\s*)?(\d{1,2})[:,\.](\d{2})[\s\.]+(?:hs|h)?[\s\.]*\d+[°º]?\s*llamado/i);
+    if (callTime) {
+        let h = parseInt(callTime[1], 10);
+        let m = parseInt(callTime[2], 10);
+        if (h >= 7 && h <= 23) return { hours: h, minutes: m };
+    }
+
+    // 2. Explicit "a las HH:mm" or "a partir de las HH:mm"
+    const explicitTime = cleanText.match(/(?:a\s*las|a\s*partir\s*de\s*las|horario:?)\s*(\d{1,2})[:,\.](\d{2})\s*(?:hs|h|horas)?\b/i);
+    if (explicitTime) {
+        let h = parseInt(explicitTime[1], 10);
+        let m = parseInt(explicitTime[2], 10);
+        if (h >= 7 && h <= 23) return { hours: h, minutes: m };
+    }
+
+    // 3. "a las HH hs" (without minutes, hours >= 7, NOT followed by "de [materia]")
+    const hourOnly = cleanText.match(/(?:a\s*las|a\s*partir\s*de\s*las)\s*(\d{1,2})\s*(?:hs|h|horas)\b(?!\s*de\s+[a-záéíóúñ])/i);
+    if (hourOnly) {
+        let h = parseInt(hourOnly[1], 10);
+        if (h >= 7 && h <= 23) return { hours: h, minutes: 0 };
+    }
+
+    // 4. General "HH:mm hs" (hours >= 7)
+    const genMatch = cleanText.match(/(?:^|[^\d])(\d{1,2})[:,\.](\d{2})\s*(?:hs|h)\b/i);
+    if (genMatch) {
+        let h = parseInt(genMatch[1], 10);
+        let m = parseInt(genMatch[2], 10);
+        if (h >= 7 && h <= 23) return { hours: h, minutes: m };
+    }
+
+    return null;
+}
+
+/**
  * Intelligent Contest Parser using Pattern-Matching & Learned Heuristics
  */
 function parseConcursoHeuristics(cleanText, fallbackText, hintYear) {
@@ -193,7 +305,6 @@ function parseConcursoHeuristics(cleanText, fallbackText, hintYear) {
         if (match) {
             const segment = match[1] || match[0];
             const dateInSegment = segment.match(/(\d{1,2})\s*(?:-|de|al)?\s*(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)(?:\s*(?:-|de|del)?\s*(\d{4}))?/i);
-            const timeInSegment = segment.match(/(?:a las\s*|a partir de las\s*)?(\d{1,2})[:,\.]?(\d{2})?\s*(?:hs|horas|h)\b/i);
 
             if (dateInSegment) {
                 let day = parseInt(dateInSegment[1], 10);
@@ -201,19 +312,13 @@ function parseConcursoHeuristics(cleanText, fallbackText, hintYear) {
                 let year = dateInSegment[3] ? parseInt(dateInSegment[3], 10) : defaultYear;
                 if (year < 100) year += 2000;
 
-                if (timeInSegment) {
-                    hours = parseInt(timeInSegment[1], 10);
-                    minutes = timeInSegment[2] ? parseInt(timeInSegment[2], 10) : 0;
+                const validTime = extractValidContestTime(segment) || extractValidContestTime(cleanText);
+                if (validTime) {
+                    hours = validTime.hours;
+                    minutes = validTime.minutes;
                 } else {
-                    // Check elsewhere in text for multi-call or time
-                    const genTime = cleanText.match(/(?:a las\s*)?(\d{1,2})[:,\.](\d{2})\s*(?:hs|h)\b/i);
-                    if (genTime) {
-                        hours = parseInt(genTime[1], 10);
-                        minutes = parseInt(genTime[2], 10);
-                    } else {
-                        hours = 8;
-                        minutes = 0;
-                    }
+                    hours = 8;
+                    minutes = 0;
                 }
 
                 refDate = new Date(Date.UTC(year, month, day));
@@ -424,11 +529,16 @@ async function analyzeConcurso(content, title, urlYear = 2026) {
         }
     }
 
+    // 5. Extract job character designations (STF, STV, SCV)
+    const caracterData = extractCaracteres(clean);
+
     return {
         date: finalDate,
         llamados,
         primaryLlamado,
         llamadosSummary,
+        caracteres: caracterData.caracteres,
+        caracterSummary: caracterData.caracterSummary,
         confidence,
         needsReview: !finalDate
     };
@@ -438,5 +548,6 @@ module.exports = {
     analyzeConcurso,
     loadPatterns,
     saveLearnedPattern,
-    extractMultiLlamados
+    extractMultiLlamados,
+    extractCaracteres
 };

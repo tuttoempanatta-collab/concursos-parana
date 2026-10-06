@@ -1,6 +1,36 @@
 {
-  "version": 1,
-  "lastUpdated": "2026-10-05T23:25:00.000Z",
+  "version": 2,
+  "lastUpdated": "2026-10-06T05:45:00.000Z",
+  "caracteres": {
+    "STF": {
+      "codigo": "STF",
+      "nombre": "Suplente Término Fijo",
+      "descripcion": "Reemplazo transitorio por licencia reglamentaria o plazo determinado",
+      "badgeColor": "#38bdf8",
+      "badgeBg": "rgba(56, 189, 248, 0.15)"
+    },
+    "STV": {
+      "codigo": "STV",
+      "nombre": "Suplente Término Vacante",
+      "descripcion": "Suplencia sobre horas o cargos vacantes sin titular definitivo",
+      "badgeColor": "#a855f7",
+      "badgeBg": "rgba(168, 85, 247, 0.15)"
+    },
+    "SCV": {
+      "codigo": "SCV",
+      "nombre": "Suplente Cargo Vacante",
+      "descripcion": "Suplencia sobre cargo inicial o directivo vacante",
+      "badgeColor": "#ec4899",
+      "badgeBg": "rgba(236, 72, 153, 0.15)"
+    },
+    "TIT": {
+      "codigo": "TIT",
+      "nombre": "Titular",
+      "descripcion": "Cargo u horas en carácter de titular",
+      "badgeColor": "#10b981",
+      "badgeBg": "rgba(16, 185, 129, 0.15)"
+    }
+  },
   "eventPhrases": [
     {
       "id": "se_llevara_a_cabo",
@@ -19,6 +49,11 @@
     }
   ],
   "multiLlamadoPatterns": [
+    {
+      "id": "a_las_hora_punto_llamado",
+      "regex": "(?:a\\s*las|a\\s*partir\\s*de\\s*las)?\\s*(\\d{1,2}[:\\.]\\d{2})[\\s\\.]+(\\d+[°º]?\\s*llamado|primer\\s*llamado|segundo\\s*llamado)",
+      "description": "• A las 11:00. 1° llamado."
+    },
     {
       "id": "hora_llamado_materia",
       "regex": "(?:a\\s*las\\s*)?(\\d{1,2}[:\\.]\\d{2}|\\d{1,2})\\s*(?:hs|h|horas)?\\s*[-–—:]\\s*(\\d+[°º]?\\s*llamado|primer\\s*llamado|segundo\\s*llamado|tercer\\s*llamado)\\s*[-–—:]\\s*([^\\n\\r]+)",
@@ -41,6 +76,13 @@
       "regex": "se\\s*recepcionar[aá]n.*?desde\\s*el\\s*d[ií]a\\s*(\\d{1,2})\\s*(?:al|hasta\\s*el)\\s*(\\d{1,2})\\s*de\\s*([a-z]+)",
       "description": "Recepción de proyectos desde día X al Y de Mes"
     }
+  ],
+  "teachingHoursPhrases": [
+    "\\d+\\s*hs\\s*de\\s+[A-Za-zÁÉÍÓÚáéíóúñÑ]",
+    "\\d+\\s*h(?:oras?)?\\s*c[aá]tedras?",
+    "\\d+\\s*hs\\s*cat\\.?",
+    "\\d+\\s*hs\\s*en\\s+\\d+",
+    "\\d+\\s*hs\\s*los\\s+[a-z]+"
   ],
   "excludedAddressKeywords": [
     "av",

@@ -382,11 +382,13 @@ async function fetchDetailedInfo(url, urlYear) {
             distinctSubject,
             primaryLlamado: aiResult.primaryLlamado || null,
             llamadosSummary: aiResult.llamadosSummary || null,
-            llamados: aiResult.llamados || []
+            llamados: aiResult.llamados || [],
+            caracteres: aiResult.caracteres || [],
+            caracterSummary: aiResult.caracterSummary || null
         };
     } catch (e) {
         console.error(`  Failed to fetch details from ${url}: ${e.message}`);
-        return { subjects: [], plazas: [], specificDate: null, fullTextContent: '', isOld: false, needsReview: false, distinctSubject: null, primaryLlamado: null, llamadosSummary: null, llamados: [] };
+        return { subjects: [], plazas: [], specificDate: null, fullTextContent: '', isOld: false, needsReview: false, distinctSubject: null, primaryLlamado: null, llamadosSummary: null, llamados: [], caracteres: [], caracterSummary: null };
     }
 }
 
@@ -467,6 +469,8 @@ async function scrapeCGEPage(url) {
                     primaryLlamado: details.primaryLlamado || null,
                     llamadosSummary: details.llamadosSummary || null,
                     llamados: details.llamados || [],
+                    caracteres: details.caracteres || [],
+                    caracterSummary: details.caracterSummary || null,
                     link: href,
                     nivel: level !== 'No especificado' ? level : (details.specificDate ? classifyLevel(details.fullTextContent) || level : level),
                     date: (details.specificDate || date)?.toISOString() || null,

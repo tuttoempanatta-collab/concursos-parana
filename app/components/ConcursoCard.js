@@ -98,6 +98,24 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
   
   const isActive = !isPast;
 
+  // Resolve Caracteres (STF / STV / SCV) with resilient fallback
+  const resolvedCaracteres = (concurso.caracteres && concurso.caracteres.length > 0)
+    ? concurso.caracteres
+    : (() => {
+        const list = [];
+        const combined = `${concurso.fullContent || ''} ${(concurso.plazas || []).join(' ')}`;
+        if (/\bSTF\b|suplente\s*t[eé]rmino\s*fijo/i.test(combined)) {
+          list.push({ codigo: 'STF', nombre: 'Suplente Término Fijo', badgeColor: '#38bdf8', badgeBg: 'rgba(56, 189, 248, 0.15)' });
+        }
+        if (/\bSTV\b|suplente\s*t[eé]rmino\s*vacante/i.test(combined)) {
+          list.push({ codigo: 'STV', nombre: 'Suplente Término Vacante', badgeColor: '#a855f7', badgeBg: 'rgba(168, 85, 247, 0.15)' });
+        }
+        if (/\bSCV\b|suplente\s*cargo\s*vacante/i.test(combined)) {
+          list.push({ codigo: 'SCV', nombre: 'Suplente Cargo Vacante', badgeColor: '#ec4899', badgeBg: 'rgba(236, 72, 153, 0.15)' });
+        }
+        return list;
+      })();
+
   const handleCopyText = () => {
     if (concurso.fullContent) {
       navigator.clipboard.writeText(concurso.fullContent);
@@ -207,6 +225,24 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
               {concurso.distinctSubject}
             </span>
           )}
+
+          {/* Badges de Carácter del Cargo (STF / STV / SCV) */}
+          {resolvedCaracteres.map((car, idx) => (
+            <span 
+              key={idx}
+              className="level-badge" 
+              title={`${car.codigo}: ${car.nombre} (${car.codigo === 'STF' ? 'Reemplazo transitorio por licencia' : 'Vacante sin titular definitivo'})`} 
+              style={{
+                background: car.badgeBg || (car.codigo === 'STF' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(168, 85, 247, 0.15)'), 
+                color: car.badgeColor || (car.codigo === 'STF' ? '#38bdf8' : '#a855f7'), 
+                border: `1px solid ${car.badgeColor || '#38bdf8'}55`, 
+                fontWeight: 800,
+                letterSpacing: '0.04em'
+              }}
+            >
+              {car.codigo} · {car.nombre.replace('Suplente ', '')}
+            </span>
+          ))}
         </div>
         <button 
           onClick={onHide} 
@@ -341,6 +377,13 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
         {concurso.llamadosSummary && (
           <div style={{fontSize: '0.72rem', color: '#e2e8f0', marginTop: '0.4rem', background: 'rgba(255,255,255,0.05)', padding: '0.3rem 0.5rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.08)'}}>
             <strong style={{color: '#fbbf24'}}>Convocatoria: </strong>{concurso.llamadosSummary}
+          </div>
+        )}
+
+        {resolvedCaracteres.length > 0 && (
+          <div style={{fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.3rem', display: 'flex', alignItems: 'center', gap: '4px'}}>
+            <strong style={{color: '#cbd5e1'}}>Designación:</strong>
+            {resolvedCaracteres.map(c => `${c.codigo} (${c.nombre})`).join(' · ')}
           </div>
         )}
         
