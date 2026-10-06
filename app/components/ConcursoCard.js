@@ -18,7 +18,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return d;
 }
 
-export default function ConcursoCard({ concurso, onHide, userLocation }) {
+export default function ConcursoCard({ concurso, onHide, userLocation, isRecent, isNew, isToday, isExpired: forceExpired }) {
   const [timeLeft, setTimeLeft] = useState(null);
   
   // Clean text function for fail-safe UI display
@@ -77,7 +77,26 @@ export default function ConcursoCard({ concurso, onHide, userLocation }) {
   const [copied, setCopied] = useState(false);
 
   const isUrgent = timeLeft && !timeLeft.isExpired && (timeLeft.days === 0 && timeLeft.hours < 12);
-  const isExpired = timeLeft?.isExpired || false;
+  const isPast = timeLeft?.isExpired || false;
+  // Never turn off or dim cards within the 2-week window; forceExpired is reserved for >14 days
+  const isExpired = forceExpired || false; 
+
+  // Dynamic Theme Logic according to business rules:
+  // 1. Recientes / Novedades: Pink (#f472b6)
+  // 2. Pasados (< 2 semanas): Green (#10b981) - Visible, no dimming
+  // 3. Activos: Today (Cyan #38bdf8 / Emerald #34d399), Future (Color primario)
+  let themeColor = '#10b981'; // Green default for past (< 2 weeks)
+  if (isNew) {
+    themeColor = '#f472b6'; // Pink
+  } else if (!isPast) {
+    if (isToday) themeColor = '#38bdf8'; // Cyan
+    else if (isRecent) themeColor = '#fb923c'; // Orange
+    else themeColor = 'var(--color-primario)'; // Brand blue
+  } else {
+    themeColor = '#10b981'; // Green for passed within 2 weeks
+  }
+  
+  const isActive = !isPast;
 
   const handleCopyText = () => {
     if (concurso.fullContent) {
@@ -158,12 +177,37 @@ export default function ConcursoCard({ concurso, onHide, userLocation }) {
   };
 
   return (
-    <div className={`glass-panel concurso-card ${isExpired ? 'expired' : ''}`} data-level={concurso.nivel}>
+    <div 
+      className={`glass-panel concurso-card ${forceExpired ? 'expired' : ''}`} 
+      data-level={concurso.nivel}
+      style={{
+        boxShadow: `0 10px 30px -10px ${themeColor}44, inset 0 0 0 1px ${themeColor}33`,
+        borderColor: `${themeColor}44`
+      }}
+    >
       {/* Decorative top bar */}
-      <div className="concurso-level-bar"></div>
+      <div className="concurso-level-bar" style={{background: themeColor}}></div>
 
       <div className="card-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-        <span className="level-badge">{concurso.nivel}</span>
+        <div style={{display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap'}}>
+          <span className="level-badge">{concurso.nivel}</span>
+          {isNew && <span className="level-badge" style={{background: 'rgba(244, 114, 182, 0.2)', color: '#f472b6', border: '1px solid rgba(244, 114, 182, 0.3)', fontWeight: 700}}>NOVEDAD</span>}
+          {isRecent && isActive && <span className="level-badge" style={{background: 'rgba(251, 146, 60, 0.2)', color: '#fb923c', border: '1px solid rgba(251, 146, 60, 0.3)', fontWeight: 700}}>RECIENTE</span>}
+          {isPast && !forceExpired && <span className="level-badge" style={{background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)', fontWeight: 700}}>REALIZADO</span>}
+          {forceExpired && <span className="level-badge" style={{background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', fontWeight: 700}}>VENCIDO</span>}
+          
+          {concurso.primaryLlamado && (
+            <span className="level-badge" title={concurso.primaryLlamado} style={{background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', fontWeight: 700}}>
+              {concurso.primaryLlamado}
+            </span>
+          )}
+
+          {concurso.distinctSubject && (!concurso.primaryLlamado || !concurso.primaryLlamado.toLowerCase().includes(concurso.distinctSubject.toLowerCase())) && (
+            <span className="level-badge" title={concurso.distinctSubject} style={{background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
+              {concurso.distinctSubject}
+            </span>
+          )}
+        </div>
         <button 
           onClick={onHide} 
           title="Ocultar de la lista"
@@ -177,60 +221,42 @@ export default function ConcursoCard({ concurso, onHide, userLocation }) {
         </button>
       </div>
 
-      <h3 className="card-title">{concurso.title}</h3>
+      <h3 className="card-title" style={{
+        fontSize: '1rem', 
+        lineHeight: 1.3, 
+        margin: '0.25rem 0 0.5rem 0',
+        color: '#f1f5f9',
+        fontWeight: 600
+      }}>
+        {concurso.title}
+      </h3>
 
-      <div className="card-details">
+      <div className="card-details" style={{ fontSize: '0.75rem', gap: '8px', flexWrap: 'wrap' }}>
         {/* Date format display */}
-        <div className="detail-row" title="Fecha Programada">
-          <CalendarDays size={16} />
-          <span>{targetDate ? targetDate.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' }) : 'Fecha por confirmar'}</span>
+        <div className="detail-row" title="Fecha Programada" style={{ gap: '4px' }}>
+          <CalendarDays size={14} style={{ flexShrink: 0 }} />
+          <span>{targetDate ? targetDate.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit' }) : 'Fecha a confirmar'}</span>
         </div>
-        <div className="detail-row" title="Departamento">
-           <MapPin size={16} /> <span>{concurso.department}</span>
+        <div className="detail-row" title="Departamento" style={{ gap: '4px' }}>
+           <MapPin size={14} style={{ flexShrink: 0 }} /> <span>{concurso.department?.replace('(Dpto)', '').trim()}</span>
         </div>
       </div>
 
-      {/* New: Subjects and Plazas info */}
-      {(concurso.materias?.length > 0 || concurso.plazas?.length > 0) && (
-        <div className="extra-info-panel" style={{
-            margin: '0.75rem 0', padding: '0.75rem', 
-            background: 'rgba(255,255,255,0.03)', borderRadius: '8px', 
-            border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.8125rem'
-        }}>
-          {concurso.materias?.length > 0 && (
-            <div style={{marginBottom: concurso.plazas?.length > 0 ? '0.75rem' : '0'}}>
-              <span style={{color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginBottom: '0.25rem', fontSize: '0.7rem', textTransform: 'uppercase'}}>Materias:</span>
-              <div style={{color: 'var(--color-primario)', fontWeight: 500, lineHeight: 1.4}}>
-                {concurso.materias.join(', ')}
-              </div>
-            </div>
-          )}
-          {concurso.plazas?.length > 0 && (
-            <div>
-              <span style={{color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginBottom: '0.25rem', fontSize: '0.7rem', textTransform: 'uppercase'}}>Plazas / Cargos:</span>
-              <div style={{color: '#60a5fa', fontWeight: 500, lineHeight: 1.4}}>
-                {concurso.plazas.join(', ')}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Full Content Toggle */}
       {concurso.fullContent && (
-        <div style={{margin: '0.5rem 0'}}>
+        <div style={{margin: '0.25rem 0'}}>
           <button 
             onClick={() => setShowDetails(!showDetails)}
             style={{
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', 
-              color: 'var(--text-main)', borderRadius: '6px',
-              fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
-              padding: '0.4rem 0.75rem', width: '100%',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', 
+              color: 'var(--text-muted)', borderRadius: '6px',
+              fontSize: '0.7rem', fontWeight: 600, cursor: 'pointer',
+              padding: '0.3rem 0.6rem', width: '100%',
+              display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px'
             }}
           >
-            <span>{showDetails ? 'Ocultar descripción' : 'Ver descripción completa'}</span>
-            <ExternalLink size={14} style={{opacity: 0.6}} />
+            <span>{showDetails ? 'Ocultar' : 'Detalles'}</span>
+            <ExternalLink size={12} />
           </button>
           
           {showDetails && (
@@ -267,8 +293,8 @@ export default function ConcursoCard({ concurso, onHide, userLocation }) {
       <div className={`countdown-timer ${isUrgent ? 'urgent' : ''}`}>
         <div className="detail-row" style={{ color: 'var(--text-main)', fontSize: '0.875rem' }}>
           <Clock size={16} />
-            <span style={{ fontWeight: 500 }}>
-            {!timeLeft ? 'Fecha a confirmar' : timeLeft.isExpired ? 'Finalizado / En curso' : 'Faltan:'}
+          <span style={{ fontWeight: 600, color: themeColor }}>
+            {!timeLeft ? 'Fecha a confirmar' : isActive ? 'Concurso Activo' : 'Concurso Realizado'}
           </span>
         </div>
         
@@ -303,6 +329,18 @@ export default function ConcursoCard({ concurso, onHide, userLocation }) {
               <span className="time-value" style={{opacity: 0.8}}>{String(timeLeft.seconds).padStart(2, '0')}</span>
               <span className="time-label">SEG</span>
             </div>
+          </div>
+        )}
+
+        {isPast && !forceExpired && (
+          <div style={{fontSize: '0.8rem', color: '#34d399', marginTop: '0.4rem', fontWeight: 600}}>
+            ✓ Llevado a cabo {targetDate ? `el ${targetDate.toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit'})} (${targetDate.toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'})} hs)` : ''}
+          </div>
+        )}
+
+        {concurso.llamadosSummary && (
+          <div style={{fontSize: '0.72rem', color: '#e2e8f0', marginTop: '0.4rem', background: 'rgba(255,255,255,0.05)', padding: '0.3rem 0.5rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.08)'}}>
+            <strong style={{color: '#fbbf24'}}>Convocatoria: </strong>{concurso.llamadosSummary}
           </div>
         )}
         
@@ -341,17 +379,17 @@ export default function ConcursoCard({ concurso, onHide, userLocation }) {
         )}
       </div>
 
-      <div className="card-actions" style={{display: 'flex', gap: '0.5rem'}}>
+      <div className="card-actions" style={{display: 'flex', gap: '6px'}}>
         <a 
           href={`https://www.google.com/maps/dir/?api=1&origin=${userLocation ? `${userLocation.lat},${userLocation.lng}` : ''}&destination=${encodeURIComponent(mapQuery)}`}
           target="_blank" 
           rel="noopener noreferrer" 
           className="btn-primary"
-          style={{flex: 1, backgroundColor: '#34d399', color: '#064e3b'}}
+          style={{flex: 1, backgroundColor: 'rgba(52, 211, 153, 0.1)', color: '#34d399', fontSize: '0.75rem', padding: '0.5rem'}}
           title="Abrir ruta en Google Maps"
         >
-          <span style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'}}>
-            <MapIcon size={16} /> Mapa
+          <span style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'}}>
+            <MapIcon size={14} /> Mapa
           </span>
         </a>
         <a 
@@ -363,11 +401,13 @@ export default function ConcursoCard({ concurso, onHide, userLocation }) {
             flex: 2,
             opacity: concurso.link ? 1 : 0.4,
             cursor: concurso.link ? 'pointer' : 'not-allowed',
-            pointerEvents: concurso.link ? 'auto' : 'none'
+            pointerEvents: concurso.link ? 'auto' : 'none',
+            fontSize: '0.75rem',
+            padding: '0.5rem'
           }}
         >
-          <span style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'}}>
-            Ver Concurso <ExternalLink size={16} />
+          <span style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'}}>
+            Ver Concurso <ExternalLink size={14} />
           </span>
         </a>
       </div>

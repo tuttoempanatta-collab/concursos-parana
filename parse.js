@@ -3,10 +3,12 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const { getSlugId } = require('./utils/idUtils');
+const { analyzeConcurso } = require('./aiConcursoEngine');
 
 const IS_LOCAL_ONLY = process.argv.includes('--local-only');
 
-// Initialize Firebase Admin only if not in local-only mode
+// Initialize Firebase Admin
 let db = null;
 if (!IS_LOCAL_ONLY) {
     if (!admin.apps.length) {
@@ -28,18 +30,20 @@ if (!IS_LOCAL_ONLY) {
                 projectId: 'concursos-entre-rios'
             });
             admin.firestore().settings({ ignoreUndefinedProperties: true });
-            console.log('Firebase Admin inicializado con Project ID (sin credenciales explícitas).');
+            console.log('Firebase Admin inicializado con Project ID.');
         }
     }
     db = admin.firestore();
 }
 
-const TARGET_YEAR = 2026;
+const TARGET_YEAR = new Date().getFullYear();
+
 const EXCLUDED_URLS = [
     'https://cge.entrerios.gov.ar/concursos-docentes/',
     'https://cge.entrerios.gov.ar/departamental-parana/',
     'https://cge.entrerios.gov.ar/'
 ];
+
 const EXCLUDED_TITLES = [
     'concursos. docentes',
     'concursos docentes',
@@ -48,79 +52,215 @@ const EXCLUDED_TITLES = [
     'dde parana'
 ];
 
-function hashString(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash |= 0; 
-    }
-    return Math.abs(hash).toString(36);
+/**
+ * Filter to skip links older than 14 days (2 weeks) based on URL date
+ */
+function isLinkRecent(href) {
+    const m = href.match(/\/20(\d{2})\/(\d{2})\//);
+    if (!m) return true; // If no date in URL, don't skip
+    const year = parseInt('20' + m[1], 10);
+    const month = parseInt(m[2], 10) - 1;
+    
+    const now = new Date();
+    const cutoff = new Date();
+    cutoff.setDate(now.getDate() - 14); // 2 weeks (14 days)
+
+    const postDate = new Date(year, month, 28);
+    return postDate >= cutoff;
 }
 
 /**
- * Enhanced Date Extraction with Year Context
+ * Utility to add business days (skipping Sat/Sun)
+ */
+function addBusinessDays(startDate, days) {
+    let result = new Date(startDate);
+    let added = 0;
+    while (added < days) {
+        result.setUTCDate(result.getUTCDate() + 1);
+        const dayOfWeek = result.getUTCDay();
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) { // 0=Sun, 6=Sat
+            added++;
+        }
+    }
+    return result;
+}
+
+/**
+ * Enhanced Date Extraction with Project Contest and Address Filter Support
  */
 function extractEventDate(text, fallbackText, hintYear) {
     const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-    const dateRegex = /(\d{1,2})\s*(?:[y,-]\s*\d{1,2}\s*)*(?:-|de|al)?\s*(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)(?:\s*(?:-|de|del)?\s*(\d{4}))?/i;
-    const numericDateRegex = /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/;
-    const timeRegex = /(?:a las\s*)?(\d{1,2})[:,\.]?(\d{2})?\s*(?:hs|horas|h)/i;
+    const dateRegex = /(\d{1,2})\s*(?:[y,-]\s*\d{1,2}\s*)*(?:-|de|al)?\s*(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)(?:\s*(?:-|de|del)?\s*(\d{4}))?/gi;
+    const pedidoDateRegex = /Fecha\s*(?:del\s*pedido|de\s*publicación|de\s*pedido)?\s*[:\-\s]+(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/i;
+    const timeRegex = /(?:a las\s*|a partir de las\s*)?(\d{1,2})[:,\.]?(\d{2})?\s*(?:hs|horas|h)\b/i;
+    const timeRangeRegex = /(?:de|horario de)\s*(\d{1,2})[:,\.]?(\d{2})?\s*(?:hs|horas|h)?\s*(?:a|hasta)\s*(\d{1,2})[:,\.]?(\d{2})?\s*(?:hs|horas|h)/i;
+    const businessDaysRegex = /(\d+)\s*días\s*hábiles/i;
 
     const defaultYear = hintYear || TARGET_YEAR;
-
-    // Clean text to avoid email collision
     const cleanText = (text + " " + (fallbackText || "")).replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL]');
     
-    // 1. Try to find a date with a month name
-    const match = cleanText.match(dateRegex);
-    const timeMatch = cleanText.match(timeRegex);
+    let refDate = null;
+    let hours = 8;
+    let minutes = 0;
+    let needsReview = false;
+
+    // 1. TOP PRIORITY: Direct "Se llevará a cabo el día..." / "El mismo se llevará a cabo..." phrasing
+    // Explicit sentence where the contest actually occurs
+    const carriedOutRegex = /(?:el\s*mismo\s*)?(?:se\s*llevar[aá]\s*a\s*cabo|se\s*realizar[aá]|a\s*llevarse\s*a\s*cabo|tendr[aá]\s*lugar|convoca(?:\s*a\s*concurso)?(?:\s*presencial)?\s*para|presentarse.*?el\s*d[ií]a)\s*(?:el\s*d[ií]a)?\s*([^\.\n\r]{10,140})/i;
+    const carriedOutMatch = cleanText.match(carriedOutRegex);
     
-    let timeHours = 8; // Default school morning
-    let timeMinutes = 0;
-    let timeSet = false;
+    if (carriedOutMatch) {
+        const segment = carriedOutMatch[1];
+        const dateInSegment = segment.match(/(\d{1,2})\s*(?:-|de|al)?\s*(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)(?:\s*(?:-|de|del)?\s*(\d{4}))?/i);
+        const timeInSegment = segment.match(/(?:a las\s*|a partir de las\s*)?(\d{1,2})[:,\.]?(\d{2})?\s*(?:hs|horas|h)\b/i);
 
-    if (timeMatch) {
-       timeHours = parseInt(timeMatch[1], 10);
-       timeMinutes = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
-       timeSet = true;
-    }
+        if (dateInSegment) {
+            let day = parseInt(dateInSegment[1], 10);
+            let month = months.indexOf(dateInSegment[2].toLowerCase());
+            let year = dateInSegment[3] ? parseInt(dateInSegment[3], 10) : defaultYear;
+            if (year < 100) year += 2000;
 
-    if (match) {
-        let day = parseInt(match[1], 10);
-        let monthStr = match[2].toLowerCase();
-        let monthIndex = months.indexOf(monthStr);
-        let year = match[3] ? parseInt(match[3], 10) : defaultYear;
-        if (year < 100) year += 2000;
-        
-        let h = timeSet ? timeHours : 23;
-        let m = timeSet ? timeMinutes : 59;
-        
-        // GitHub Actions normally runs in UTC. Argentina is UTC-3.
-        // We inject the time directly into UTC after adding 3 hours.
-        return new Date(Date.UTC(year, monthIndex, day, h + 3, m, 0));
-    }
+            if (timeInSegment) {
+                hours = parseInt(timeInSegment[1], 10);
+                minutes = timeInSegment[2] ? parseInt(timeInSegment[2], 10) : 0;
+            } else {
+                hours = 8;
+                minutes = 0;
+            }
 
-    // 2. Try numeric date
-    const numMatch = cleanText.match(numericDateRegex);
-    if (numMatch) {
-        let day = parseInt(numMatch[1], 10);
-        let month = parseInt(numMatch[2], 10) - 1;
-        let year = parseInt(numMatch[3], 10);
-        if (year < 100) year += 2000;
-        
-        // Safety check for common swaps (MM/DD/YYYY) vs Argentinian DD/MM/YYYY
-        if (month > 11 && day <= 12) {
-            let temp = month;
-            month = day - 1;
-            day = temp;
+            refDate = new Date(Date.UTC(year, month, day));
+            refDate.setUTCHours(hours + 3, minutes, 0, 0);
+            refDate.needsReview = false;
+            return refDate;
         }
-        
-        let h = timeSet ? timeHours : 23;
-        let m = timeSet ? timeMinutes : 59;
-        return new Date(Date.UTC(year, month, day, h + 3, m, 0));
     }
-    
+
+    // 2. PROJECT CONTEST WITH BUSINESS DAYS: Base date + business days
+    const isProject = /proyect[oó]/i.test(cleanText) || /carpetas?\s*de\s*antecedentes/i.test(cleanText);
+    const busMatch = cleanText.match(businessDaysRegex);
+
+    if (isProject && busMatch) {
+        let baseDate = null;
+        const pedidoMatch = cleanText.match(pedidoDateRegex);
+        if (pedidoMatch) {
+            let d = parseInt(pedidoMatch[1], 10);
+            let m = parseInt(pedidoMatch[2], 10) - 1;
+            let y = parseInt(pedidoMatch[3], 10);
+            if (y < 100) y += 2000;
+            baseDate = new Date(Date.UTC(y, m, d));
+        } else {
+            const topSlice = cleanText.slice(0, 500);
+            const topNum = topSlice.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
+            if (topNum) {
+                let d = parseInt(topNum[1], 10);
+                let m = parseInt(topNum[2], 10) - 1;
+                let y = parseInt(topNum[3], 10);
+                if (y < 100) y += 2000;
+                baseDate = new Date(Date.UTC(y, m, d));
+            }
+        }
+
+        if (baseDate) {
+            const days = parseInt(busMatch[1], 10);
+            refDate = addBusinessDays(baseDate, days);
+
+            const rangeMatch = cleanText.match(timeRangeRegex);
+            if (rangeMatch) {
+                hours = parseInt(rangeMatch[3], 10);
+                minutes = rangeMatch[4] ? parseInt(rangeMatch[4], 10) : 0;
+            } else {
+                hours = 18;
+                minutes = 0;
+                needsReview = true;
+            }
+
+            refDate.setUTCHours(hours + 3, minutes, 0, 0);
+            refDate.needsReview = needsReview;
+            return refDate;
+        }
+    }
+
+    // 3. STANDARD CONTESTS: Find date with month name, skipping street addresses
+    if (!refDate) {
+        const matches = [...cleanText.matchAll(dateRegex)];
+        for (const m of matches) {
+            const index = m.index;
+            const fullMatch = m[0].toLowerCase();
+            const prefix = cleanText.substring(Math.max(0, index - 25), index).toLowerCase();
+
+            // Street name filter: "Av. 9 de Julio", "Calle 25 de Mayo", "sita en Don Bosco", etc.
+            const isStreet = /(?:av\.?|avenida|calle|pasaje|bvd|bulevar|ruta|sita en|domicilio|altura)\s*$/i.test(prefix.trim()) ||
+                             (/av\.?\s*9\s*de\s*julio/i.test(cleanText) && fullMatch.includes('9 de julio'));
+
+            if (!isStreet) {
+                let day = parseInt(m[1], 10);
+                let monthIndex = months.indexOf(m[2].toLowerCase());
+                let year = m[3] ? parseInt(m[3], 10) : defaultYear;
+                if (year < 100) year += 2000;
+                refDate = new Date(Date.UTC(year, monthIndex, day));
+                break;
+            }
+        }
+    }
+
+    // 3. Fallback to numeric date (explicitly preceded by "día" or "fecha")
+    if (!refDate) {
+        const explicitNum = cleanText.match(/(?:el\s*día|fecha:?)\s*(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/i);
+        if (explicitNum) {
+            let day = parseInt(explicitNum[1], 10);
+            let month = parseInt(explicitNum[2], 10) - 1;
+            let year = parseInt(explicitNum[3], 10);
+            if (year < 100) year += 2000;
+            refDate = new Date(Date.UTC(year, month, day));
+        }
+    }
+
+    if (!refDate) return null;
+
+    // 4. TIME EXTRACTION
+    const tMatch = cleanText.match(timeRegex);
+    if (tMatch) {
+        hours = parseInt(tMatch[1], 10);
+        minutes = tMatch[2] ? parseInt(tMatch[2], 10) : 0;
+    } else {
+        hours = 8;
+        minutes = 0;
+    }
+
+    refDate.setUTCHours(hours + 3, minutes, 0, 0);
+    refDate.needsReview = false;
+    return refDate;
+}
+
+/**
+ * Extracts distinct subject, workshop, or project name cleanly
+ */
+function extractDistinctSubject(content) {
+    if (!content) return null;
+
+    // Pattern 1: Specific project name: PROYECTO: "Nombre Del Proyecto"
+    const projMatch = content.match(/PROYECTO[\s:\-–—]+[“"']([^”"'\n\r]{4,70})[”"']/i);
+    if (projMatch) {
+        const p = projMatch[1].trim();
+        if (!/mejora e inclusión|resoluc|concurso|educación/i.test(p)) return p;
+    }
+
+    // Pattern 2: "\d+ hs/horas cátedras de [Taller / Acompañamiento al estudio / etc.] [-–] [Materia]"
+    const hsMatch = content.match(/\d+\s*h(?:oras?|s\.?)?\s*(?:cátedras?|cat\.?)?\s*de\s*(?:Taller|Acompañamiento\s*al\s*estudio)?\s*[\-–—:]?\s*([A-Za-zÁÉÍÓÚáéíóúñÑ\s\.\/]{3,35})\s*(?:[\(–\-]|STF|Turno|\n|\r)/i);
+    if (hsMatch) {
+        let sub = hsMatch[1].trim().replace(/^de\s+/i, '').replace(/[\.\s]+$/, '').trim();
+        if (sub.length >= 3 && sub.length <= 35 && !/requisito|bases|formato|papel|hoja|sobre|decreto|resol|ascenso|ingreso|jerarquía|conducción/i.test(sub)) {
+            return sub;
+        }
+    }
+
+    // Pattern 3: Specialized role only (e.g. "Rol de Referente Técnico Escolar")
+    const rolMatch = content.match(/Rol\s*de\s*([A-Za-zÁÉÍÓÚáéíóúñÑ\s]{4,35})/i);
+    if (rolMatch) {
+        let r = rolMatch[1].trim();
+        if (!/concurso|institución|escuela|ascenso|ingreso|jerarquía/i.test(r)) return r;
+    }
+
     return null;
 }
 
@@ -128,17 +268,20 @@ function classifyLevel(title) {
     const lowerTitle = title.toLowerCase();
     if (
         lowerTitle.includes('secundari') || lowerTitle.includes('sec.') || lowerTitle.includes('sec ') || 
-        lowerTitle.includes('jovenes') || lowerTitle.includes('jóvenes') || 
-        lowerTitle.includes('esja') || lowerTitle.includes('e.s.j.a') ||
-        lowerTitle.includes('eeat') || lowerTitle.includes('e.e.a.t') ||
-        lowerTitle.includes('eet') || lowerTitle.includes('e.e.t') ||
-        lowerTitle.includes('técnica') || lowerTitle.includes('tecnica') || 
-        lowerTitle.includes('esa ') || lowerTitle.includes('e.s.a')
+        lowerTitle.includes('esja') || lowerTitle.includes('e.s.j.a') || lowerTitle.includes('eet') || 
+        lowerTitle.includes('e.e.t') || lowerTitle.includes('eeat') || lowerTitle.includes('e.e.a.t') || 
+        lowerTitle.includes('técnica') || lowerTitle.includes('tecnica') || lowerTitle.includes('orientada') || 
+        lowerTitle.includes('liceo')
     ) return 'Secundario';
     
-    if (lowerTitle.includes('primari') || lowerTitle.includes('nep') || lowerTitle.includes('nina') || lowerTitle.includes('escuela n°') || lowerTitle.includes('esc. nro') || lowerTitle.includes('esc. nº') || lowerTitle.includes('idioma extranjero')) return 'Primario';
-    if (/esc(?:uela|\.?)\s*(?:n[ro|º|°\.? ]*)?\d+/i.test(lowerTitle)) return 'Primario';
-    if (lowerTitle.includes('superior')) return 'Superior';
+    if (
+        lowerTitle.includes('primari') || lowerTitle.includes('nep') || lowerTitle.includes('nina') || 
+        lowerTitle.includes('integral') || lowerTitle.includes('especial') || 
+        /esc(?:uela|\.?)\s*(?:n[ro|º|°\.? ]*)?\d+/i.test(lowerTitle)
+    ) return 'Primario';
+
+    if (lowerTitle.includes('inicial') || lowerTitle.includes('jardin') || lowerTitle.includes('jardín')) return 'Inicial';
+    if (lowerTitle.includes('superior') || lowerTitle.includes('isdf') || lowerTitle.includes('instituto') || lowerTitle.includes('profesorado')) return 'Superior';
     return 'No especificado';
 }
 
@@ -155,13 +298,13 @@ function classifyCity(title) {
         'aldea eigenfeld', 'aldea san antonio', 'aldea san rafael', 'antonio tomás', 'colonia celina', 
         'espinillo norte', 'paso de la arena', 'paso de la piedra', 'santa luisa', 'arroyo maturrango', 
         'arroyo palo seco', 'colonia cerrito', 'colonia merou', 'colonia reffino', 'distrito tala', 
-        'quebracho', 'colonia nueva', 'el ramblón', 'puerto viboras', 'estación sosa', 'estacion sosa',
+        'quebracho', 'colonia nueva', 'el ramblón', 'puerto viboras', 'estación sosa', 'estacion sosa', 
         'maría grande segunda', 'maria grande segunda', 'villa mabel'
     ];
-    let matchedCity = 'Paraná (Dpto)';
+
     for (const loc of localidadesDeptParana) {
         if (lowerTitle.includes(loc)) {
-            matchedCity = loc.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            let matchedCity = loc.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
             if (matchedCity === 'Segui' || matchedCity === 'Seguí') matchedCity = 'Seguí';
             if (matchedCity.includes('Maria Grande') || matchedCity.includes('María Grande')) matchedCity = 'María Grande';
             if (matchedCity === 'Pna' || matchedCity === 'Pna.' || matchedCity === 'Pná' || matchedCity === 'Villa Mabel') matchedCity = 'Paraná Ciudad';
@@ -171,7 +314,7 @@ function classifyCity(title) {
     for (const variant of paranaVariants) {
         if (lowerTitle.includes(variant)) return 'Paraná Ciudad';
     }
-    return matchedCity;
+    return 'Paraná (Dpto)';
 }
 
 async function fetchDetailedInfo(url, urlYear) {
@@ -180,74 +323,70 @@ async function fetchDetailedInfo(url, urlYear) {
         const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 20000 });
         const $ = cheerio.load(response.data);
         $('script, style, iframe, ins, .lat-not, footer, header').remove();
-        const fullTextContent = $('body').text().trim();
-        const entryContent = $('.entry-content, .post-content, article, #main-content').first();
-        const content = entryContent.text() || $('body').text();
+        
+        // Exact article content container in CGE Entre Ríos
+        const articleContainer = $('.noticia-interior, .entry-content, .post-content, article').first();
+        const content = articleContainer.length > 0 ? articleContainer.text() : $('body').text();
         const cleanContent = content
             .replace(/moment\.updateLocale[\s\S]*?\}\s*\);/g, '')
             .replace(/window\.twttr[\s\S]*?\}\s*\(document, "script", "twitter-wjs"\)\);/g, '')
+            .replace(/Compartir\s*Tweet\s*WhatsApp\s*Imprimir/gi, '')
             .trim();
             
         const lines = cleanContent.split('\n').map(l => l.trim()).filter(l => l.length > 3);
         const subjects = [];
         const plazas = [];
-        let specificDate = null;
         let solicitud = null;
-        let foundDate = null;
-        let foundTime = null;
 
+        // 1. AI CONTINUOUS LEARNING & MULTI-LLAMADO ENGINE
+        const aiResult = await analyzeConcurso(cleanContent, url, urlYear);
+        const specificDate = aiResult.date || null;
+        const needsReview = aiResult.needsReview || false;
+
+        // 2. EXTRACT DISTINCT SUBJECT / WORKSHOP
+        let distinctSubject = extractDistinctSubject(cleanContent);
+        if (!distinctSubject && aiResult.llamados?.length > 0 && aiResult.llamados[0].materia) {
+            distinctSubject = aiResult.llamados[0].materia;
+        }
+        if (distinctSubject) {
+            console.log(`    [DISTINCT] Found subject: ${distinctSubject}`);
+        }
+        if (aiResult.primaryLlamado) {
+            console.log(`    [AI LLAMADO] ${aiResult.primaryLlamado}`);
+        }
+
+        // 3. EXTRACT PLAZAS / MATERIAS / SOLICITUD
         for (const line of lines) {
-            // 1. SMART DATE DETECTION IN BODY
-            if (!foundDate) {
-                const eventDate = extractEventDate(line, null, urlYear);
-                if (eventDate) {
-                    foundDate = eventDate; // Just take the first valid date found in the body
-                }
-            }
-            // 2. INDEPENDENT TIME MATCHING (IF DATE WAS FOUND WITHOUT TIME)
-            if (!foundTime) {
-                const tmRegex = /(?:a las\s*)?(\d{1,2})[:,\.]?(\d{2})?\s*(?:hs|horas|h)\b/i;
-                const tmMatch = line.match(tmRegex);
-                if (tmMatch) {
-                    const hStr = tmMatch[1];
-                    // Skip generic fake times like "24 hs" or "48 hs"
-                    if (hStr !== '24' && hStr !== '48' && hStr !== '72') {
-                        foundTime = { 
-                            h: parseInt(hStr, 10), 
-                            m: tmMatch[2] ? parseInt(tmMatch[2], 10) : 0 
-                        };
-                    }
-                }
-            }
             if (!solicitud) {
                 const solMatch = line.match(/Solicitud\s*N[°º]?\s*(\d+)/i) || line.match(/(\d+)[°º]?\s*llamado/i);
                 if (solMatch) solicitud = parseInt(solMatch[1], 10);
             }
             const lowerLine = line.toLowerCase();
-            const isJobInfo = lowerLine.includes('plaza') || lowerLine.includes('hs cát') || lowerLine.includes('hs cat') || lowerLine.includes('stf') || lowerLine.includes('cue') || lowerLine.includes('cargo') || /\d+\s*hs/i.test(lowerLine);
+            const isJobInfo = lowerLine.includes('plaza') || lowerLine.includes('hs cát') || lowerLine.includes('hs cat') || 
+                              lowerLine.includes('stf') || lowerLine.includes('cue') || lowerLine.includes('cargo') || 
+                              /\d+\s*hs/i.test(lowerLine);
             if (isJobInfo) {
                 const level = classifyLevel(line);
                 if (level === 'Secundario') subjects.push(line); else plazas.push(line);
             }
         }
-        if (foundDate) {
-            specificDate = foundDate;
-            if (foundTime) {
-                // Adjust timezone for Argentina
-                specificDate.setUTCHours(foundTime.h + 3, foundTime.m, 0, 0);
-            }
-        }
-        
-        // STRICT YEAR CHECK IN CONTENT
-        if (specificDate && specificDate.getFullYear() < TARGET_YEAR) {
-            console.log(`    [REJECT] Content year is old: ${specificDate.getFullYear()}`);
-            return { subjects: [], plazas: [], specificDate: null, fullTextContent: '', isOld: true };
-        }
 
-        return { subjects: subjects.slice(0, 100), plazas: plazas.slice(0, 100), specificDate, fullTextContent, solicitud, isOld: false };
+        return { 
+            subjects: subjects.slice(0, 100), 
+            plazas: plazas.slice(0, 100), 
+            specificDate, 
+            fullTextContent: cleanContent, 
+            solicitud, 
+            isOld: false, 
+            needsReview,
+            distinctSubject,
+            primaryLlamado: aiResult.primaryLlamado || null,
+            llamadosSummary: aiResult.llamadosSummary || null,
+            llamados: aiResult.llamados || []
+        };
     } catch (e) {
         console.error(`  Failed to fetch details from ${url}: ${e.message}`);
-        return { subjects: [], plazas: [], specificDate: null, fullTextContent: '', isOld: false };
+        return { subjects: [], plazas: [], specificDate: null, fullTextContent: '', isOld: false, needsReview: false, distinctSubject: null, primaryLlamado: null, llamadosSummary: null, llamados: [] };
     }
 }
 
@@ -256,7 +395,7 @@ let globalDeepScrapeCount = 0;
 async function scrapeCGEPage(url) {
     try {
         console.log(`Scraping list ${url}...`);
-        const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 20000 });
+        const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 25000 });
         const $ = cheerio.load(response.data);
         const results = [];
         const links = [];
@@ -272,17 +411,17 @@ async function scrapeCGEPage(url) {
                 const combinedText = (linkText.length > 30) ? linkText : `${containerText} ${linkText}`;
                 const lowerText = combinedText.toLowerCase();
 
-                // 1. SKIP IF TITLE IS EXACTLY A CATEGORY NAME
                 if (EXCLUDED_TITLES.includes(lowerText.trim())) return;
 
                 const isParana = url.includes('departamental-parana') || lowerText.includes('paran') || lowerText.includes('pná') || lowerText.includes('pna');
                 if (!isParana) return;
                 
-                if (lowerText.includes('concurso') || lowerText.includes('llama a') || lowerText.includes('convocatoria') || lowerText.includes('asamblea')) {
+                if (lowerText.includes('concurso') || lowerText.includes('cocnurso') || lowerText.includes('llamad') || lowerText.includes('llama') || lowerText.includes('convoca') || lowerText.includes('asamblea') || lowerText.includes('desconvoca')) {
                     const fullHref = href.startsWith('http') ? href : `https://cge.entrerios.gov.ar${href.startsWith('/') ? '' : '/'}${href}`;
-                    
-                    // 2. SKIP IF URL IS IN EXCLUSION LIST
                     if (EXCLUDED_URLS.includes(fullHref)) return;
+
+                    // Skip links older than 45 days
+                    if (!isLinkRecent(fullHref)) return;
 
                     if (!links.find(l => l.href === fullHref)) {
                         let pubDateText = '';
@@ -294,23 +433,15 @@ async function scrapeCGEPage(url) {
             });
         });
 
-        console.log(`- Found ${links.length} potential links on ${url}`);
+        console.log(`- Found ${links.length} recent potential links on ${url}`);
         const now = new Date();
         
-        // Save original CGE order before sorting!
         links.forEach((l, idx) => { l.cgeOrder = idx; });
-        
-        // Prioritize links containing TARGET_YEAR (like /2026/)
-        links.sort((a, b) => {
-            const isTargetA = a.href.includes(`/${TARGET_YEAR}/`) ? 1 : 0;
-            const isTargetB = b.href.includes(`/${TARGET_YEAR}/`) ? 1 : 0;
-            return isTargetB - isTargetA;
-        });
 
+        // Deep scrape top 80 newest recent links
         for (const linkObj of links) {
             const { text, href, pubDateText } = linkObj;
             
-            // USE URL YEAR AS HINT, BUT DON'T SKIP YET (some 2026 posts are in 2024/2017 subfolders)
             const urlMatch = href.match(/\/20(\d{2})\//);
             const urlYear = urlMatch ? parseInt('20' + urlMatch[1], 10) : TARGET_YEAR;
 
@@ -318,30 +449,36 @@ async function scrapeCGEPage(url) {
             const level = classifyLevel(text);
             let date = extractEventDate(text, pubDateText, urlYear);
             
-            if (globalDeepScrapeCount < 100) {
+            if (globalDeepScrapeCount < 80) {
                 globalDeepScrapeCount++;
                 const details = await fetchDetailedInfo(href, urlYear);
+                const docId = getSlugId(href);
                 
-                // DISCARD IF BODY SAYS OLD YEAR
-                if (details.isOld || (details.specificDate && details.specificDate.getFullYear() !== TARGET_YEAR)) {
-                    console.log(`[FILTER] Discarding inner contest belonging to year != ${TARGET_YEAR}: ${href}`);
-                    continue;
+                // Refine title ONLY if distinctSubject is concise and not already present
+                let finalTitle = text;
+                if (details.distinctSubject && details.distinctSubject.length <= 40 && !text.toLowerCase().includes(details.distinctSubject.toLowerCase())) {
+                    finalTitle = `${text} (${details.distinctSubject})`;
                 }
 
                 results.push({
-                    id: `scrape-${url.includes('dept') ? 'dept' : 'main'}-${hashString(href)}`,
-                    title: text,
+                    id: docId,
+                    title: finalTitle,
+                    distinctSubject: details.distinctSubject || null,
+                    primaryLlamado: details.primaryLlamado || null,
+                    llamadosSummary: details.llamadosSummary || null,
+                    llamados: details.llamados || [],
                     link: href,
-                    nivel: details.specificDate ? classifyLevel(details.fullTextContent) || level : level,
+                    nivel: level !== 'No especificado' ? level : (details.specificDate ? classifyLevel(details.fullTextContent) || level : level),
                     date: (details.specificDate || date)?.toISOString() || null,
-                    pubDate: now.toISOString().split('T')[0],
+                    pubDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(now),
                     department: city,
                     originalText: text,
                     materias: details.subjects,
                     plazas: details.plazas,
                     fullContent: details.fullTextContent || '',
                     solicitud: details.solicitud,
-                    cgeOrder: linkObj.cgeOrder
+                    cgeOrder: linkObj.cgeOrder,
+                    needsReview: details.needsReview || false
                 });
             }
         }
@@ -369,54 +506,46 @@ async function run() {
     }
 
     const results = [];
-    const urls = ['https://cge.entrerios.gov.ar/concursos-docentes/', 'https://cge.entrerios.gov.ar/departamental-parana/'];
+    const urls = [
+        'https://cge.entrerios.gov.ar/departamental-parana/',
+        'https://cge.entrerios.gov.ar/concursos-docentes/'
+    ];
+
     for (const url of urls) {
         const scraped = await scrapeCGEPage(url);
         results.push(...scraped);
     }
 
+    // Strict 14-day (2 weeks) retention: purge anything older
     const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - 30);
+    cutoffDate.setDate(cutoffDate.getDate() - 14);
     const filteredByDate = results.filter(r => !r.date || new Date(r.date) >= cutoffDate);
     results.length = 0; 
     results.push(...filteredByDate);
 
-    if (fs.existsSync('data.txt')) {
-        const content = fs.readFileSync('data.txt', 'utf-8').trim();
-        if (content) {
-            const lines = content.split('\n');
-            for (let i = 0; i < lines.length; i += 2) {
-                const title = lines[i]?.trim();
-                const loadDate = lines[i+1]?.trim() || '';
-                if (!title || results.find(r => r.title === title)) continue;
-                const d = extractEventDate(title, loadDate);
-                results.push({
-                    id: `official-${i}`, title, link: 'https://cge.entrerios.gov.ar/concursos-docentes/',
-                    nivel: classifyLevel(title), date: d?.toISOString() || null, 
-                    pubDate: new Date().toISOString().split('T')[0], department: classifyCity(title),
-                    originalText: title, materias: [], plazas: []
-                });
-            }
-        }
-    }
-
+    // Deduplication by slug ID
     const seen = new Set();
     const unique = [];
+    const unclassified = [];
+
     for (const item of results) {
-        if (!seen.has(item.link + item.title)) {
-            const docId = (item.link || "").replace(/\/$/, "").split('/').pop().replace(/[^a-zA-Z0-9]/g, '_') || `s_${Math.random().toString(36).substr(2, 5)}`;
-            if (!blacklist.has(docId)) {
-                unique.push(item);
-                seen.add(item.link + item.title);
+        const docId = getSlugId(item.link);
+        if (!seen.has(docId) && !blacklist.has(docId)) {
+            unique.push(item);
+            seen.add(docId);
+
+            if (item.needsReview || item.nivel === 'No especificado' || !item.date) {
+                unclassified.push({ ...item, docId });
             }
         }
     }
 
+    // Sort: newest first
     unique.sort((a, b) => {
         const dateA = a.date ? new Date(a.date).getTime() : 0;
         const dateB = b.date ? new Date(b.date).getTime() : 0;
         if (dateB !== dateA) return dateB - dateA;
-        return (b.solicitud || 0) - (a.solicitud || 0);
+        return (a.cgeOrder ?? 999) - (b.cgeOrder ?? 999);
     });
 
     if (!fs.existsSync('public')) fs.mkdirSync('public');
@@ -425,24 +554,26 @@ async function run() {
     fs.writeFileSync(path.join('public', 'parsed_data.json'), JSON.stringify(unique, null, 2));
     fs.writeFileSync(path.join('out', 'parsed_data.json'), JSON.stringify(unique, null, 2));
 
-    console.log(`\nDONE: Saved ${unique.length} items.`);
+    console.log(`\nDONE: Saved ${unique.length} clean, active items.`);
     
-    if (!IS_LOCAL_ONLY) {
-        await syncToFirestore(unique);
+    if (!IS_LOCAL_ONLY && db) {
+        console.log(`Syncing ${unique.length} successfully parsed to Firestore...`);
+        await syncToFirestore(unique, unclassified);
     } else {
         console.log("Local only mode: skipped Firestore sync.");
     }
 }
 
-async function syncToFirestore(concursos) {
+async function syncToFirestore(concursos, unclassified = []) {
     console.log('\n--- SINCRONIZANDO CON FIRESTORE ---');
     try {
         const concursosRef = db.collection('concursos');
         let batch = db.batch();
         let count = 0;
         let batchCount = 0;
+        
         for (const c of concursos) {
-            const docId = (c.link || "").replace(/\/$/, "").split('/').pop().replace(/[^a-zA-Z0-9]/g, '_') || `s_${Math.random().toString(36).substr(2, 5)}`;
+            const docId = getSlugId(c.link);
             const docRef = concursosRef.doc(docId);
             const snap = await docRef.get();
             
@@ -451,19 +582,19 @@ async function syncToFirestore(concursos) {
                 continue;
             }
 
-            // DOUBLE CHECK BLACKLIST (in case it was added during run)
             const isEliminated = await db.collection('concursos_eliminados').doc(docId).get();
             if (isEliminated.exists) {
                 console.log(`[BLACKLIST] Saltando concurso eliminado: ${docId}`);
                 continue;
             }
-            // PREVENT OVERWRITING ORIGINAL PUB DATE AND MANUAL FIELDS
+
             if (snap.exists) {
-                delete c.pubDate; // Keep the original creation date so we don't spam 'Novedades'
+                delete c.pubDate;
             }
             
             batch.set(docRef, { ...c, isManual: false, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
-            count++; batchCount++;
+            count++; 
+            batchCount++;
             if (batchCount === 450) { 
                 await batch.commit(); 
                 batch = db.batch(); 
@@ -472,13 +603,37 @@ async function syncToFirestore(concursos) {
         }
         if (batchCount > 0) await batch.commit();
         
+        // Review queue sync
+        let unclassBatch = db.batch();
+        let unclassCount = 0;
+        let unclassBatchCount = 0;
+        for (const c of unclassified) {
+            const docId = c.docId;
+            const ref = db.collection('concursos_pendientes_revision').doc(docId);
+            unclassBatch.set(ref, {
+                 ...c,
+                 status: 'pending',
+                 discoveredAt: admin.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            unclassCount++;
+            unclassBatchCount++;
+            if (unclassBatchCount === 450) {
+                await unclassBatch.commit();
+                unclassBatch = db.batch();
+                unclassBatchCount = 0;
+            }
+        }
+        if (unclassBatchCount > 0) await unclassBatch.commit();
+        
         await db.collection('system').doc('robot_status').set({ 
             lastSync: admin.firestore.FieldValue.serverTimestamp(), 
             status: 'online', 
-            version: 'v2.5.0-SMART' 
+            version: 'v3.2.0-CLEAN',
+            scrapedCount: count,
+            unclassifiedCount: unclassCount
         }, { merge: true });
         
-        console.log(`--- Sincronización exitosa: ${count} docs ---`);
+        console.log(`--- Sincronización exitosa: ${count} docs, ${unclassCount} en revisión ---`);
     } catch (err) { 
         console.warn('Error sync:', err.message); 
     }

@@ -10,8 +10,8 @@ console.log('--- ACTUALIZANDO DATOS EN VIVO (FIREBASE) ---');
     }
 
 try {
-    // 1. Ejecutar el scraper para obtener datos frescos
-    console.log('1. Ejecutando scraper...');
+    // 1. Ejecutar el scraper (y sincronización automática con Firestore)
+    console.log('1. Ejecutando scraper y sincronización Firestore...');
     execSync('node parse.js', { stdio: 'inherit' });
 
     // 2. Asegurarse de que el archivo existe y copiarlo a public/ y out/
@@ -32,7 +32,7 @@ try {
     console.log('3. Desplegando en Firebase Hosting...');
     try {
         // La CLI de Firebase detecta automáticamente la variable de entorno FIREBASE_TOKEN
-        execSync('npx firebase deploy --only hosting', { stdio: 'inherit' });
+        execSync('npx firebase deploy --only hosting,firestore', { stdio: 'inherit' });
     } catch (deployError) {
         console.error('\nERROR CRÍTICO: El despliegue a Firebase falló.');
         console.error('Asegúrate de que el FIREBASE_TOKEN sea válido y esté bien configurado en GitHub Secrets.');

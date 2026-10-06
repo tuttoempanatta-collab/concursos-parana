@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import ConcursoCard from './components/ConcursoCard';
-import { RefreshCw, Search, Heart, X, Users } from 'lucide-react';
+import PresenceManager from './components/PresenceManager';
+import { RefreshCw, Search, Heart, X, Users, Activity } from 'lucide-react';
 
 import { db } from '../firebase.config';
 import { collection, getDocs, query, orderBy, doc, getDoc, setDoc, updateDoc, increment, onSnapshot } from 'firebase/firestore';
@@ -36,6 +37,12 @@ export default function Home() {
   const [visitorCount, setVisitorCount] = useState(0);
   const [showDonate, setShowDonate] = useState(false);
   const [robotStatus, setRobotStatus] = useState(null);
+  const [storefrontSettings, setStorefrontSettings] = useState({
+    donate_alias: 'fcolombo61.ppay',
+    donate_cbu: '0000076500000038535516',
+    donate_text: '¡Hola, colega! 👋 👩‍🏫👨‍🏫 \n\nEste espacio fue creado con mucha dedicación para que todos tengamos las mismas oportunidades de encontrar nuestro lugar en el aula. 🏫✨\n\nSi esta web te ayudó a conseguir ese cargo o suplencia que buscabas, o simplemente te facilita el día a día, te invito a colaborar con lo que puedas para mantener los servidores y seguir mejorando el servicio. \n\n¡Mucha suerte en tu próximo concurso! 💪📖'
+  });
+  const [liveCount, setLiveCount] = useState(1);
 
   // Persistence: Load hidden IDs on mount
   useEffect(() => {
@@ -45,6 +52,17 @@ export default function Home() {
         setHiddenCardIds(JSON.parse(saved));
       } catch (e) { console.error("Error loading hidden contests", e); }
     }
+    
+    // Fetch dynamic settings from Firestore
+    const fetchSettings = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'config', 'storefront_settings'));
+        if (snap.exists()) {
+          setStorefrontSettings(prev => ({ ...prev, ...snap.data() }));
+        }
+      } catch (e) { console.error("Error loading storefront settings", e); }
+    };
+    fetchSettings();
   }, []);
 
   // Persistence: Save hidden IDs on change
@@ -219,18 +237,18 @@ export default function Home() {
                   if (!fullHref.includes('/2026/') && !fullHref.includes('/2025/')) return;
 
                   let nivel = 'Otro';
-                  // Prioritize Secondary types first
-                  if (
+                  if (lowerText.includes('inicial') || lowerText.includes('jardin') || lowerText.includes('jardín')) nivel = 'Inicial';
+                  else if (lowerText.includes('primari') || lowerText.includes('nep') || lowerText.includes('nina') || lowerText.includes('integral') || lowerText.includes('especial') || lowerText.includes('escuela n°') || lowerText.includes('esc. nro') || lowerText.includes('esc. nº') || lowerText.includes('idioma extranjero') || /esc(?:uela|\.?)\s*(?:n[ro|º|°\.? ]*)?\\d+/i.test(lowerText)) nivel = 'Primario';
+                  else if (
                       lowerText.includes('secundari') || lowerText.includes('sec.') || lowerText.includes('sec ') || 
                       lowerText.includes('jovenes') || lowerText.includes('jóvenes') || 
                       lowerText.includes('esja') || lowerText.includes('e.s.j.a') ||
                       lowerText.includes('eeat') || lowerText.includes('e.e.a.t') ||
                       lowerText.includes('eet') || lowerText.includes('e.e.t') ||
                       lowerText.includes('técnica') || lowerText.includes('tecnica') || 
-                      lowerText.includes('esa ') || lowerText.includes('e.s.a')
+                      lowerText.includes('esa ') || lowerText.includes('e.s.a') ||
+                      lowerText.includes('orientada')
                   ) nivel = 'Secundario';
-                  else if (lowerText.includes('inicial') || lowerText.includes('integral') || lowerText.includes('especial') || lowerText.includes('jardin') || lowerText.includes('jardín')) nivel = 'Inicial';
-                  else if (lowerText.includes('primari') || lowerText.includes('nep') || lowerText.includes('nina') || lowerText.includes('escuela n°') || lowerText.includes('esc. nro') || lowerText.includes('esc. nº') || lowerText.includes('idioma extranjero') || /esc(?:uela|\.?)\s*(?:n[ro|º|°\.? ]*)?\d+/i.test(lowerText)) nivel = 'Primario';
                   else if (lowerText.includes('superior')) nivel = 'Superior';
                   
                   const isParana = url.includes('departamental-parana') || lowerText.includes('paran') || lowerText.includes('pná') || lowerText.includes('pna');
@@ -402,21 +420,29 @@ export default function Home() {
 
   const now = new Date();
   const cutoffDate = new Date();
-  cutoffDate.setDate(now.getDate() - 30);
+  cutoffDate.setDate(now.getDate() - 14); // Estricto a 14 días (2 semanas)
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-  const todayStr = now.toISOString().split('T')[0];
+  const endOfToday = new Date(startOfToday.getTime() + 86400000);
+  const startOfTomorrow = new Date(startOfToday.getTime() + 86400000);
+  const startOfDayAfter = new Date(startOfToday.getTime() + 172800000);
+  const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(now);
 
   const filteredConcursos = concursos.filter(c => {
     const levelMatch = activeFilters[c.nivel] || (c.nivel === 'No especificado' && activeFilters['Otro']);
     const searchMatch = searchQuery === '' || 
-      c.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      c.department.toLowerCase().includes(searchQuery.toLowerCase());
+      (c.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (c.department || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.primaryLlamado || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.distinctSubject || '').toLowerCase().includes(searchQuery.toLowerCase());
       
     const docDate = c.date ? new Date(c.date) : null;
     const isTooOld = docDate && docDate < cutoffDate;
     
-    // hideMatch: Hide if (Too Old AND user wants to hide inactive) OR (Hidden manually)
-    const hideMatch = !(hideInactive && isTooOld) && !hiddenCardIds.includes(c.id);
+    // Regla de retención: Eliminar de la vista cualquier concurso > 14 días
+    if (isTooOld) return false;
+
+    const isPast = docDate && docDate < now;
+    const hideMatch = !(hideInactive && isPast) && !hiddenCardIds.includes(c.id);
       
     return levelMatch && searchMatch && hideMatch;
   });
@@ -425,49 +451,45 @@ export default function Home() {
     if (c.pubDate !== todayStr) return false;
     if (!c.date) return true;
     const d = new Date(c.date);
-    const yesterday = new Date(startOfToday.getTime() - 86400000);
-    // Not a novelty if the event already happened more than a day ago
-    return d >= yesterday;
+    return d >= startOfToday;
   };
 
+  // 1. Novedades del día (publicadas hoy y vigentes) -> Rosado (#f472b6)
   const concursosNuevos = filteredConcursos.filter(c => isNovedad(c));
 
+  // 2. Concursos de hoy activos (horario posterior o en curso) -> Emerald/Cyan
   const concursosHoy = filteredConcursos.filter(c => {
     if (!c.date || isNovedad(c)) return false;
     const d = new Date(c.date);
-    return d >= startOfToday && d < new Date(startOfToday.getTime() + 86400000);
+    return d >= now && d < endOfToday;
   });
 
+  // 3. Concursos de mañana -> Blue (#60a5fa)
   const concursosManana = filteredConcursos.filter(c => {
     if (!c.date || isNovedad(c)) return false;
     const d = new Date(c.date);
-    const startOfTomorrow = new Date(startOfToday.getTime() + 86400000);
-    const startOfDayAfter = new Date(startOfToday.getTime() + 172800000);
     return d >= startOfTomorrow && d < startOfDayAfter;
   });
 
+  // 4. Próximos Concursos (más allá de mañana o sin fecha fija)
   const concursosFuturos = filteredConcursos.filter(c => {
-    if (!c.date) return !isNovedad(c); 
     if (isNovedad(c)) return false;
+    if (!c.date) return true;
     const d = new Date(c.date);
-    const startOfDayAfter = new Date(startOfToday.getTime() + 172800000);
     return d >= startOfDayAfter;
   });
 
-  const concursosRecientes = filteredConcursos.filter(c => {
-    if (!c.date || isNovedad(c)) return false;
+  // 5. Concursos que ya pasaron su hora pero tienen < 2 semanas -> Verde (#10b981) (Sin apagar)
+  const concursosPasadosRecientes = filteredConcursos.filter(c => {
+    if (isNovedad(c)) return false;
+    if (!c.date) return false;
     const d = new Date(c.date);
-    return d < startOfToday && d >= cutoffDate; 
-  });
-
-  const concursosVencidos = filteredConcursos.filter(c => {
-    if (!c.date || isNovedad(c)) return false;
-    const d = new Date(c.date);
-    return d < cutoffDate; // Truly expired
+    return d < now && d >= cutoffDate;
   });
 
   return (
     <div className="container">
+      <PresenceManager onCountChange={setLiveCount} />
       <header className="header" style={{position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
         <div>
            <h1>Concursos Docentes</h1>
@@ -523,9 +545,10 @@ export default function Home() {
             })()}
           </div>
           <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
-            <div style={{display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: 0.6, fontSize: '0.7rem', color: 'var(--text-muted)'}}>
-              <Users size={14} />
-              <span>{visitorCount.toLocaleString()}</span>
+            {/* Real-time Presence Badge */}
+            <div className="live-badge" title="Usuarios mirando el sitio ahora mismo">
+              <div className="live-dot"></div>
+              <span>{liveCount} EN VIVO</span>
             </div>
             
             <button 
@@ -752,40 +775,19 @@ export default function Home() {
                 </div>
               )}
 
-              {concursosRecientes.length > 0 && (
+              {concursosPasadosRecientes.length > 0 && !hideInactive && (
                 <div>
-                  <h2 style={{marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#fb923c'}}>
-                    <span style={{width: '12px', height: '12px', borderRadius: '50%', background: '#fb923c', boxShadow: '0 0 10px #fb923c'}}></span>
-                    Concursos Recientes (Activos)
+                  <h2 style={{marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#10b981'}}>
+                    <span style={{width: '12px', height: '12px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981'}}></span>
+                    Concursos Realizados / Pasados (Últimas 2 Semanas)
                   </h2>
                   <div className="concursos-grid">
-                    {concursosRecientes.map(concurso => (
+                    {concursosPasadosRecientes.map(concurso => (
                       <ConcursoCard 
                         key={concurso.id} 
                         concurso={concurso} 
                         onHide={() => handleHideCard(concurso.id)}
                         userLocation={userLocation}
-                        isRecent={true}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {concursosVencidos.length > 0 && !hideInactive && (
-                <div>
-                  <h2 style={{marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-muted)'}}>
-                    <span style={{width: '12px', height: '12px', borderRadius: '50%', background: 'var(--text-muted)'}}></span>
-                    Concursos Vencidos
-                  </h2>
-                  <div className="concursos-grid" style={{opacity: 0.7}}>
-                    {concursosVencidos.map(concurso => (
-                      <ConcursoCard 
-                        key={concurso.id} 
-                        concurso={concurso} 
-                        onHide={() => handleHideCard(concurso.id)}
-                        userLocation={userLocation}
-                        isExpired={true}
                       />
                     ))}
                   </div>
@@ -821,21 +823,18 @@ export default function Home() {
               <h2 style={{margin: 0, color: '#f1f5f9'}}>Cofre de Solidaridad</h2>
             </div>
 
-            <p style={{lineHeight: '1.6', color: '#cbd5e1', fontSize: '0.95rem', marginBottom: '2rem'}}>
-              ¡Hola, colega! 👋 👩‍🏫👨‍🏫 <br /><br />
-              Este espacio fue creado con mucha dedicación para que todos tengamos las mismas oportunidades de encontrar nuestro lugar en el aula. 🏫✨<br /><br />
-              Si esta web te ayudó a conseguir ese cargo o suplencia que buscabas, o simplemente te facilita el día a día, te invito a colaborar con lo que puedas para mantener los servidores y seguir mejorando el servicio. <br /><br />
-              ¡Mucha suerte en tu próximo concurso! 💪📖
+            <p style={{lineHeight: '1.6', color: '#cbd5e1', fontSize: '0.95rem', marginBottom: '2rem', whiteSpace: 'pre-line'}}>
+              {storefrontSettings.donate_text}
             </p>
 
             <div style={{background: 'rgba(255,255,255,0.05)', padding: '1.25rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)'}}>
-              <div style={{marginBottom: '1rem'}}>
-                <span style={{display: 'block', fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em'}}>Alias Mercado Pago</span>
-                <code style={{fontSize: '1.1rem', color: 'var(--color-primario)', fontWeight: 800}}>fcolombo61.ppay</code>
+              <div style={{marginBottom: '1rem', cursor: 'pointer'}} onClick={() => { navigator.clipboard.writeText(storefrontSettings.donate_alias); alert('Alias copiado!'); }}>
+                <span style={{display: 'block', fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em'}}>Alias (Click p/ copiar)</span>
+                <code style={{fontSize: '1.1rem', color: 'var(--color-primario)', fontWeight: 800}}>{storefrontSettings.donate_alias}</code>
               </div>
-              <div>
-                <span style={{display: 'block', fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em'}}>CBU</span>
-                <code style={{fontSize: '1rem', color: '#f1f5f9'}}>0000076500000038535516</code>
+              <div style={{cursor: 'pointer'}} onClick={() => { navigator.clipboard.writeText(storefrontSettings.donate_cbu); alert('CBU copiado!'); }}>
+                <span style={{display: 'block', fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em'}}>CBU (Click p/ copiar)</span>
+                <code style={{fontSize: '1rem', color: '#f1f5f9'}}>{storefrontSettings.donate_cbu}</code>
               </div>
             </div>
 

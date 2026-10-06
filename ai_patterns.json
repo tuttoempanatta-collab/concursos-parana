@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "lastUpdated": "2026-10-05T23:25:00.000Z",
+  "eventPhrases": [
+    {
+      "id": "se_llevara_a_cabo",
+      "regex": "(?:el\\s*mismo\\s*)?(?:se\\s*llevar[aá]\\s*a\\s*cabo|se\\s*realizar[aá]|a\\s*llevarse\\s*a\\s*cabo|tendr[aá]\\s*lugar|convoca(?:\\s*a\\s*concurso)?(?:\\s*presencial)?\\s*para|presentarse.*?el\\s*d[ií]a)\\s*(?:el\\s*d[ií]a)?\\s*([^\\.\\n\\r]{10,160})",
+      "description": "Frase directa de realización del acto concursal"
+    },
+    {
+      "id": "deberan_presentarse",
+      "regex": "(?:los\\s*interesados\\s*)?(?:deber[aá]n\\s*presentarse|concurrir)\\s*(?:en|a)?\\s*[^\\.\\n\\r]*?el\\s*d[ií]a\\s*([^\\.\\n\\r]{10,140})",
+      "description": "Indicación de presentación de aspirantes"
+    },
+    {
+      "id": "defensa_proyectos",
+      "regex": "(?:defensa\\s*de\\s*proyectos?|evaluaci[oó]n\\s*de\\s*proyectos?)\\s*[:\\-–]?\\s*(?:el\\s*d[ií]a)?\\s*([^\\.\\n\\r]{10,120})",
+      "description": "Defensa de proyectos pedagógicos"
+    }
+  ],
+  "multiLlamadoPatterns": [
+    {
+      "id": "hora_llamado_materia",
+      "regex": "(?:a\\s*las\\s*)?(\\d{1,2}[:\\.]\\d{2}|\\d{1,2})\\s*(?:hs|h|horas)?\\s*[-–—:]\\s*(\\d+[°º]?\\s*llamado|primer\\s*llamado|segundo\\s*llamado|tercer\\s*llamado)\\s*[-–—:]\\s*([^\\n\\r]+)",
+      "description": "A las 18:00hs – 1° Llamado – Materia"
+    },
+    {
+      "id": "llamado_a_las_hora",
+      "regex": "(\\d+[°º]?\\s*llamado|primer\\s*llamado|segundo\\s*llamado)\\s*(?:a\\s*las|horario)?\\s*(\\d{1,2}[:\\.]\\d{2}|\\d{1,2})\\s*(?:hs|h|horas)?\\s*[:\\-–—.]?\\s*([^\\n\\r]*)",
+      "description": "Primer Llamado a las 17:30 H - Materia"
+    }
+  ],
+  "projectPatterns": [
+    {
+      "id": "dias_habiles_desde_publicacion",
+      "regex": "(\\d+)\\s*d[ií]as\\s*h[aá]biles\\s*(?:a\\s*partir\\s*de|desde)\\s*(?:la\\s*publicaci[oó]n|el\\s*pedido|la\\s*presente)",
+      "description": "Presentación por X días hábiles a partir de publicación"
+    },
+    {
+      "id": "recepcion_desde_hasta",
+      "regex": "se\\s*recepcionar[aá]n.*?desde\\s*el\\s*d[ií]a\\s*(\\d{1,2})\\s*(?:al|hasta\\s*el)\\s*(\\d{1,2})\\s*de\\s*([a-z]+)",
+      "description": "Recepción de proyectos desde día X al Y de Mes"
+    }
+  ],
+  "excludedAddressKeywords": [
+    "av",
+    "avenida",
+    "calle",
+    "pasaje",
+    "bvd",
+    "bulevar",
+    "ruta",
+    "sita en",
+    "domicilio",
+    "altura",
+    "esquina",
+    "barrio"
+  ],
+  "streetDates": [
+    "9 de julio",
+    "25 de mayo",
+    "1 de mayo",
+    "1° de mayo",
+    "3 de febrero",
+    "8 de octubre",
+    "20 de junio",
+    "12 de octubre"
+  ]
+}
