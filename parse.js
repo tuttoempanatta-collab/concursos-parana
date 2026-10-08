@@ -314,27 +314,6 @@ function extractDistinctSubject(content) {
     return null;
 }
 
-function classifyLevel(title) {
-    const lowerTitle = title.toLowerCase();
-    if (
-        lowerTitle.includes('secundari') || lowerTitle.includes('sec.') || lowerTitle.includes('sec ') || 
-        lowerTitle.includes('esja') || lowerTitle.includes('e.s.j.a') || lowerTitle.includes('eet') || 
-        lowerTitle.includes('e.e.t') || lowerTitle.includes('eeat') || lowerTitle.includes('e.e.a.t') || 
-        lowerTitle.includes('técnica') || lowerTitle.includes('tecnica') || lowerTitle.includes('orientada') || 
-        lowerTitle.includes('liceo')
-    ) return 'Secundario';
-    
-    if (
-        lowerTitle.includes('primari') || lowerTitle.includes('nep') || lowerTitle.includes('nina') || 
-        lowerTitle.includes('integral') || lowerTitle.includes('especial') || 
-        /esc(?:uela|\.?)\s*(?:n[ro|º|°\.? ]*)?\d+/i.test(lowerTitle)
-    ) return 'Primario';
-
-    if (lowerTitle.includes('inicial') || lowerTitle.includes('jardin') || lowerTitle.includes('jardín')) return 'Inicial';
-    if (lowerTitle.includes('superior') || lowerTitle.includes('isdf') || lowerTitle.includes('instituto') || lowerTitle.includes('profesorado')) return 'Superior';
-    return 'No especificado';
-}
-
 function classifyCity(title) {
     const lowerTitle = title.toLowerCase();
     const paranaVariants = ['parana', 'paraná', 'pná', 'pna'];

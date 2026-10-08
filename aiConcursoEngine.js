@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+const { checkAdminCredentialMatch } = require('./adminCredentials');
 
 const PATTERNS_PATH = path.join(__dirname, 'ai_patterns.json');
 

@@ -637,19 +637,20 @@ export default function Home() {
           <div className="header-top-row">
             <a href="/admin" style={{fontSize: '0.7rem', color: 'rgba(255,255,255,0.05)', textDecoration: 'none'}}>Admin</a>
             <div style={{background: 'rgba(255,255,255,0.1)', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-muted)'}}>
-              v2.4.9-ROBOT-MONITOR-V2
+              v2.5.0-SYNC-ACTIVO
             </div>
           </div>
           
           {/* Robot Heartbeat UI */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: '6px', 
-            padding: '4px 8px', background: 'rgba(255,255,255,0.03)',
-            borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)'
+            padding: '4px 10px', background: 'rgba(255,255,255,0.04)',
+            borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)',
+            maxWidth: '100%', flexWrap: 'wrap', justifyContent: 'center'
           }}>
             {(() => {
               const getStatusInfo = (status) => {
-                if (!status || !status.lastSync) return { color: '#64748b', text: '...' };
+                if (!status || !status.lastSync) return { color: '#64748b', text: 'Conectando robot...' };
                 
                 let lastSyncDate;
                 if (status.lastSync.seconds) {
@@ -661,9 +662,10 @@ export default function Home() {
                 const diffMs = new Date() - lastSyncDate;
                 const diffHours = diffMs / (1000 * 60 * 60);
                 
-                if (diffHours < 1.2) return { color: '#10b981', text: `Sincronizado: ${lastSyncDate.toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'})}` };
-                if (diffHours < 24) return { color: '#f59e0b', text: `Última sinc: ${lastSyncDate.toLocaleDateString('es-AR', {day: '2-digit', month:'short'})}` };
-                return { color: '#ef4444', text: 'Robot Desconectado' };
+                const timeStr = lastSyncDate.toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'});
+                if (diffHours < 1.5) return { color: '#10b981', text: `Robot al día: ${timeStr} hs` };
+                if (diffHours < 24) return { color: '#f59e0b', text: `Última sinc: ${lastSyncDate.toLocaleDateString('es-AR', {day: '2-digit', month:'short'})} ${timeStr} hs` };
+                return { color: '#ef4444', text: `Desconectado (${lastSyncDate.toLocaleDateString('es-AR', {day: '2-digit', month:'2-digit'})})` };
               };
               
               const info = getStatusInfo(robotStatus);
@@ -673,9 +675,9 @@ export default function Home() {
                   <div style={{
                     width: '6px', height: '6px', borderRadius: '50%',
                     background: info.color,
-                    boxShadow: `0 0 5px ${info.color}`
+                    boxShadow: `0 0 6px ${info.color}`
                   }}></div>
-                  <span style={{fontSize: '0.65rem', fontWeight: 700, color: info.color, textTransform: 'uppercase', letterSpacing: '0.02em'}}>
+                  <span style={{fontSize: '0.65rem', fontWeight: 800, color: info.color, textTransform: 'uppercase', letterSpacing: '0.02em'}}>
                     {info.text}
                   </span>
                 </>

@@ -2,10 +2,11 @@ name: Scrape and Deploy Contests
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Se ejecuta al principio de cada hora
+    - cron: '10 * * * *'  # Se ejecuta cada hora (minuto 10)
+    - cron: '40 * * * *'  # Revisión intermedia cada hora (minuto 40)
   push:
     branches:
-      - main            # También se ejecuta cuando subes cambios a la rama principal
+      - main            # Se ejecuta automáticamente ante cada actualización
   workflow_dispatch:     # Permite ejecutarlo manualmente desde GitHub
 
 jobs:
@@ -24,11 +25,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Debug - List Files Before
-        run: ls -R
-
       - name: Fix Existing Times
         run: node fix_times.js
+        continue-on-error: true
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
@@ -39,6 +38,3 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: Debug - List Files After
-        if: always()
-        run: ls -R

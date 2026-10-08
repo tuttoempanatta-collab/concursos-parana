@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-08T02:32:04.085Z",
+  "updatedAt": "2026-10-08T10:14:39.172Z",
   "totalSchools": 208,
   "tecnicasCount": 17,
   "schools": [
@@ -8,14 +8,14 @@
       "nivel": "No especificado",
       "cue": null,
       "city": "Paraná Ciudad",
-      "contestsCount": 1
+      "contestsCount": 2
     },
     {
       "name": "Centro de Educación Física N° 34 \"Educando en Salud y en Movimiento\"",
       "nivel": "Secundario",
       "cue": "300-3448",
       "city": "Seguí",
-      "contestsCount": 3
+      "contestsCount": 4
     },
     {
       "name": "Centro de Educación Física N°26 Oro Verde",
@@ -36,7 +36,7 @@
       "nivel": "Secundario",
       "cue": "300-1493-",
       "city": "Paraná Ciudad",
-      "contestsCount": 1
+      "contestsCount": 2
     },
     {
       "name": "Dirección Departamental de Escuelas de Paraná y Supervisión de Educación Física de Nivel Primario",
@@ -78,7 +78,7 @@
       "nivel": "Secundaria Técnica",
       "cue": "300-1778-00",
       "city": "Paraná Ciudad",
-      "contestsCount": 2
+      "contestsCount": 3
     },
     {
       "name": "E.E.T. Nº 139 \"De Producción Agroindustrial\"",
@@ -99,7 +99,7 @@
       "nivel": "Secundaria Técnica",
       "cue": "300-1481-",
       "city": "Paraná Ciudad",
-      "contestsCount": 12
+      "contestsCount": 14
     },
     {
       "name": "E.E.T. Nº 21 \"Libertador General Don José de San Martín\"",
@@ -113,7 +113,7 @@
       "nivel": "Secundaria Técnica",
       "cue": "300-0497",
       "city": "Paraná Ciudad",
-      "contestsCount": 16
+      "contestsCount": 18
     },
     {
       "name": "E.E.T. Nº 3 \"Tte. Don Luis C. Candelaria\"",
@@ -134,14 +134,14 @@
       "nivel": "Secundaria Técnica",
       "cue": "300-2306",
       "city": "Paraná Ciudad",
-      "contestsCount": 8
+      "contestsCount": 9
     },
     {
       "name": "E.E.T. Nº 5 \"Malvinas Argentinas\"",
       "nivel": "Secundaria Técnica",
       "cue": "300-1572",
       "city": "Paraná Ciudad",
-      "contestsCount": 11
+      "contestsCount": 15
     },
     {
       "name": "E.E.T. Nº 58 \"Dr Federico Hoenig \"",
@@ -260,7 +260,7 @@
       "nivel": "Secundaria Técnica",
       "cue": "3001929",
       "city": "Paraná Ciudad",
-      "contestsCount": 6
+      "contestsCount": 9
     },
     {
       "name": "Escuela Educación Integral N° 31 \"Portales De Amor\"",
@@ -323,7 +323,7 @@
       "nivel": "Primario",
       "cue": "300-1676",
       "city": "Viale",
-      "contestsCount": 6
+      "contestsCount": 7
     },
     {
       "name": "Escuela Nina/Nep Primaria Nº 196 Marcelino Román,",
@@ -540,7 +540,7 @@
       "nivel": "Primario",
       "cue": "300-1668-",
       "city": "Paraná Ciudad",
-      "contestsCount": 7
+      "contestsCount": 8
     },
     {
       "name": "Escuela Primaria Nº 196 \"Marcelino Román\"",
@@ -715,14 +715,14 @@
       "nivel": "Secundario",
       "cue": "300-2009",
       "city": "San Benito",
-      "contestsCount": 3
+      "contestsCount": 4
     },
     {
       "name": "Escuela Secundaria Nº 11 MARÍA E",
       "nivel": "Secundario",
       "cue": "3001688",
       "city": "Aldea San Antonio",
-      "contestsCount": 2
+      "contestsCount": 3
     },
     {
       "name": "Escuela Secundaria Nº 12 \"Provincia Del Neuquén\"",
@@ -736,7 +736,7 @@
       "nivel": "Secundario",
       "cue": "3001957",
       "city": "Paraná Ciudad",
-      "contestsCount": 4
+      "contestsCount": 5
     },
     {
       "name": "Escuela Secundaria Nº 15 \"De la Baxada del Paraná\"",
@@ -750,7 +750,7 @@
       "nivel": "Secundario",
       "cue": "300-1500",
       "city": "Paraná Ciudad",
-      "contestsCount": 15
+      "contestsCount": 20
     },
     {
       "name": "Escuela Secundaria Nº 17 \"Poeta Juan L. Ortiz\"",
@@ -764,7 +764,7 @@
       "nivel": "Secundario",
       "cue": "300-1663",
       "city": "Paraná Ciudad",
-      "contestsCount": 9
+      "contestsCount": 10
     },
     {
       "name": "Escuela Secundaria Nº 19 \"Raúl Humberto Záccaro\"",
@@ -778,21 +778,21 @@
       "nivel": "Secundario",
       "cue": "300",
       "city": "Oro Verde",
-      "contestsCount": 1
+      "contestsCount": 4
     },
     {
       "name": "Escuela Secundaria Nº 21 \"Arturo Jauretche\"",
       "nivel": "Secundario",
       "cue": null,
       "city": "Paraná Ciudad",
-      "contestsCount": 2
+      "contestsCount": 3
     },
     {
       "name": "Escuela Secundaria Nº 22 \"Raúl Scalabrini Ortiz\"",
       "nivel": "Secundario",
       "cue": "300-1564-",
       "city": "Paraná Ciudad",
-      "contestsCount": 7
+      "contestsCount": 8
     },
     {
       "name": "Escuela Secundaria Nº 26 \"Olegario Victor Andrade\"",
@@ -806,7 +806,7 @@
       "nivel": "Secundario",
       "cue": "300-1963",
       "city": "Paraná Ciudad",
-      "contestsCount": 5
+      "contestsCount": 6
     },
     {
       "name": "Escuela Secundaria Nº 28 \"Ntra. Sra. De Guadalupe\"",
@@ -820,21 +820,21 @@
       "nivel": "No especificado",
       "cue": "300-1872",
       "city": "Paraná Ciudad",
-      "contestsCount": 1
+      "contestsCount": 2
     },
     {
       "name": "Escuela Secundaria Nº 3 \"Monseñor Dr. Abel Bazán y Bustos\"",
       "nivel": "Secundario",
       "cue": "300-1872",
       "city": "Paraná Ciudad",
-      "contestsCount": 2
+      "contestsCount": 3
     },
     {
       "name": "Escuela Secundaria Nº 30 \"Jose Hernández\"",
       "nivel": "Secundario",
       "cue": "300-1939",
       "city": "Colonia Avellaneda",
-      "contestsCount": 7
+      "contestsCount": 8
     },
     {
       "name": "Escuela Secundaria Nº 32 Vice Comodoro Don \"J.J.R Falconier\"",
@@ -862,7 +862,7 @@
       "nivel": "Secundario",
       "cue": "3001772",
       "city": "Paraná Ciudad",
-      "contestsCount": 10
+      "contestsCount": 14
     },
     {
       "name": "Escuela Secundaria Nº 37 MANUEL BELGRANO",
@@ -883,21 +883,21 @@
       "nivel": "Secundario",
       "cue": "300-1472-",
       "city": "Paraná Ciudad",
-      "contestsCount": 11
+      "contestsCount": 15
     },
     {
       "name": "Escuela Secundaria Nº 41 \"Colegio Nacional de Cerrito\"",
       "nivel": "Secundario",
       "cue": "300-1734",
       "city": "Cerrito",
-      "contestsCount": 2
+      "contestsCount": 3
     },
     {
       "name": "Escuela Secundaria Nº 44 \"Enrique Berduc\"",
       "nivel": "Secundario",
       "cue": "3002890",
       "city": "Paraná Ciudad",
-      "contestsCount": 9
+      "contestsCount": 11
     },
     {
       "name": "Escuela Secundaria Nº 45 \"Carlos Brugo\"",
@@ -918,7 +918,7 @@
       "nivel": "Secundario",
       "cue": null,
       "city": "Paraná Ciudad",
-      "contestsCount": 1
+      "contestsCount": 2
     },
     {
       "name": "Escuela Secundaria Nº 48 \"Congreso De Oriente\"",
@@ -967,14 +967,14 @@
       "nivel": "Secundario",
       "cue": "3002696",
       "city": "El Pingo",
-      "contestsCount": 5
+      "contestsCount": 7
     },
     {
       "name": "Escuela Secundaria Nº 54 \"Jorge Luis Borges\"",
       "nivel": "Secundario",
       "cue": "300-2701",
       "city": "Paraná Ciudad",
-      "contestsCount": 3
+      "contestsCount": 6
     },
     {
       "name": "Escuela Secundaria Nº 55 \"Héroes de Malvinas\"",
@@ -988,7 +988,7 @@
       "nivel": "Secundario",
       "cue": "300-2866",
       "city": "Paraná Ciudad",
-      "contestsCount": 3
+      "contestsCount": 4
     },
     {
       "name": "Escuela Secundaria Nº 58 \"Poeta Carlos Mastronardi\"",
@@ -1037,7 +1037,7 @@
       "nivel": "Secundario",
       "cue": "300-2620",
       "city": "Paraná Ciudad",
-      "contestsCount": 2
+      "contestsCount": 3
     },
     {
       "name": "Escuela Secundaria Nº 69 \"Juan XXIII\"",
@@ -1121,14 +1121,14 @@
       "nivel": "Secundario",
       "cue": "300-3153",
       "city": "Paraná Ciudad",
-      "contestsCount": 8
+      "contestsCount": 9
     },
     {
       "name": "Escuela Secundaria Nº 83 \"Empleados De Comercio\"",
       "nivel": "Secundario",
       "cue": "300-3151",
       "city": "Paraná Ciudad",
-      "contestsCount": 3
+      "contestsCount": 4
     },
     {
       "name": "Escuela Secundaria Nº 85 \"José Gervasio Artigas\"",
@@ -1156,7 +1156,7 @@
       "nivel": "Secundario",
       "cue": "3003299-",
       "city": "Puerto Curtiembre",
-      "contestsCount": 5
+      "contestsCount": 6
     },
     {
       "name": "Escuela Secundaria Nº 90 \"Antonio Marichal\"",
@@ -1212,7 +1212,7 @@
       "nivel": "Secundario",
       "cue": "300-0292",
       "city": "Paraná Ciudad",
-      "contestsCount": 1
+      "contestsCount": 2
     },
     {
       "name": "ESJA Nº 108 \"Alberto Williams\"",
@@ -1233,7 +1233,7 @@
       "nivel": "Secundario",
       "cue": "300-3265",
       "city": "Paraná Ciudad",
-      "contestsCount": 4
+      "contestsCount": 5
     },
     {
       "name": "ESJA Nº 2 \"José Martí\"",
@@ -1268,7 +1268,7 @@
       "nivel": "Secundario",
       "cue": "300-2536",
       "city": "Colonia Avellaneda",
-      "contestsCount": 1
+      "contestsCount": 2
     },
     {
       "name": "ESJA Nº 32 Vice Comodoro Don \"J.J.R Falconier\"",
@@ -1296,7 +1296,7 @@
       "nivel": "Secundario",
       "cue": "3003026",
       "city": "Paraná Ciudad",
-      "contestsCount": 1
+      "contestsCount": 2
     },
     {
       "name": "ESJA Nº 56 \"Lorenzo Miguel\"",
