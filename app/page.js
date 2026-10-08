@@ -151,9 +151,15 @@ export default function Home() {
 
   // Robot Status Listener
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'system', 'robot_status'), (snap) => {
-      if (snap.exists()) setRobotStatus(snap.data());
-    });
+    const unsub = onSnapshot(
+      doc(db, 'system', 'robot_status'), 
+      (snap) => {
+        if (snap.exists()) setRobotStatus(snap.data());
+      },
+      (err) => {
+        console.warn("Robot status listener notice:", err.message);
+      }
+    );
     return () => unsub();
   }, []);
 
@@ -168,9 +174,9 @@ export default function Home() {
         console.log("Attempting Firestore fetch...");
         const q = query(collection(db, 'concursos'), orderBy('pubDate', 'desc'));
         
-        // Timeout to avoid hang
+        // Timeout extendido a 10s para redes móviles 4G/LTE
         const fetchPromise = getDocs(q);
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Firestore timeout")), 4000));
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Firestore timeout")), 10000));
         
         const querySnapshot = await Promise.race([fetchPromise, timeoutPromise]);
         if (!querySnapshot.empty) {
@@ -178,10 +184,27 @@ export default function Home() {
             console.log(`[DEBUG] Firestore returned ${data.length} docs.`);
         }
       } catch (dbError) {
-        console.warn("Firestore fetch error/timeout, fallback incoming:", dbError);
+        console.warn("Firestore fetch error/timeout, fallback incoming:", dbError.message);
       }
 
-      // FALLBACK TO STATIC JSON
+      // FALLBACK 1: INTENTAR LEER DESDE LA RÉPLICA WEB EN VIVO (CDN)
+      if (data.length === 0 && Capacitor.isNativePlatform()) {
+        try {
+          console.log("Attempting Remote Web CDN fetch...");
+          const cdnRes = await Promise.race([
+            fetch('https://concursos-entre-rios.web.app/parsed_data.json', { cache: 'no-cache' }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("CDN timeout")), 4000))
+          ]);
+          if (cdnRes.ok) {
+            data = await cdnRes.json();
+            console.log(`[DEBUG] Loaded ${data.length} items from live Web CDN.`);
+          }
+        } catch (cdnErr) {
+          console.warn("Live Web CDN fetch failed, trying local bundled fallback:", cdnErr.message);
+        }
+      }
+
+      // FALLBACK 2: RECURRIR A JSON ESTÁTICO LOCAL
       if (data.length === 0) {
         try {
           console.log("Fetching static JSON fallback...");

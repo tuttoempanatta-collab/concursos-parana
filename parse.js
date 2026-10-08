@@ -629,6 +629,14 @@ async function run() {
         }
     }
 
+    // Merge existing tracked contests that are still within the 14-day retention window
+    for (const [id, item] of existingMap.entries()) {
+        if (!seen.has(id) && !blacklist.has(id) && isWithinRetentionWindow(item, 14)) {
+            unique.push(item);
+            seen.add(id);
+        }
+    }
+
     // Sort: newest first
     unique.sort((a, b) => {
         const dateA = a.date ? new Date(a.date).getTime() : 0;

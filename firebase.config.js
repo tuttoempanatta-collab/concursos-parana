@@ -13,7 +13,10 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-// Forzamos Long Polling para evitar bloqueos de conexión/timeouts en algunas redes
-export const db = getFirestore(app);
+// Forzamos Auto-Detect Long Polling y desactivamos streams de fetch para garantizar 100% de compatibilidad en Android WebView
+export const db = initializeFirestore(app, {
+  experimentalAutoDetectLongPolling: true,
+  useFetchStreams: false
+});
 export const auth = getAuth(app);
 export default app;
