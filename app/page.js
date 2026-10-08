@@ -16,7 +16,8 @@ import {
   classifyLevel, 
   checkAdminCredentialMatch,
   checkIsSegundoLlamado,
-  checkAdminOpportunity
+  checkAdminOpportunity,
+  isWithinRetentionWindow
 } from '../utils/concursoNormalizer';
 
 export default function Home() {
@@ -175,7 +176,8 @@ export default function Home() {
       }
 
       if (data.length > 0) {
-          const normalized = data.map(normalizeConcursoItem);
+          const validRecent = data.filter(c => isWithinRetentionWindow(c, 14));
+          const normalized = validRecent.map(normalizeConcursoItem);
           setConcursos(normalized);
           setLoading(false);
           if (!Capacitor.isNativePlatform()) return; // On web, we are done with static data
@@ -389,7 +391,8 @@ export default function Home() {
         }
       }
       
-      const normalizedFinal = finalData.map(normalizeConcursoItem);
+      const validRecentFinal = finalData.filter(c => isWithinRetentionWindow(c, 14));
+      const normalizedFinal = validRecentFinal.map(normalizeConcursoItem);
       // Sort by original CGE publication order (0 is newest)
       const sorted = normalizedFinal.sort((a, b) => {
           const orderA = typeof a.cgeOrder === 'number' ? a.cgeOrder : 9999;
@@ -479,34 +482,37 @@ export default function Home() {
     return extractSchoolName(c.title, c.fullContent);
   };
 
+  const validConcursos = concursos.filter(c => isWithinRetentionWindow(c, 14));
+
   const uniqueSchools = Array.from(new Set(
-    concursos
+    validConcursos
       .map(c => resolveSchoolName(c))
       .filter(Boolean)
       .filter(s => s !== 'Escuela Departamental' && s.length > 3)
   )).sort((a, b) => a.localeCompare(b));
 
   const uniqueCities = Array.from(new Set(
-    concursos
+    validConcursos
       .map(c => (c.department || '').replace('(Dpto)', '').trim())
       .filter(Boolean)
   )).sort();
 
   const resolveAdminOpportunity = (c) => {
+    if (!isWithinRetentionWindow(c, 14)) return false;
     if (c.isAdminOpportunity !== undefined) return c.isAdminOpportunity;
     const isAdm = c.isAdminMatch !== undefined ? c.isAdminMatch : checkAdminCredentialMatch(c).isMatch;
     const isSeg = c.isSegundoLlamado !== undefined ? c.isSegundoLlamado : checkIsSegundoLlamado(c);
-    return isAdm && isSeg;
+    return Boolean(isAdm && isSeg);
   };
 
-  const adminMatchesList = concursos.filter(c => {
+  const adminMatchesList = validConcursos.filter(c => {
     if (c.isAdminMatch !== undefined) return c.isAdminMatch;
     return checkAdminCredentialMatch(c).isMatch;
   });
 
-  const adminOpportunityList = concursos.filter(c => resolveAdminOpportunity(c));
+  const adminOpportunityList = validConcursos.filter(c => resolveAdminOpportunity(c));
 
-  const filteredConcursos = concursos.filter(c => {
+  const filteredConcursos = validConcursos.filter(c => {
     // 1. Level filter
     const cLevel = resolveLevel(c);
     const levelMatch = activeFilters[cLevel] || (cLevel === 'No especificado' && activeFilters['Otro']);
@@ -535,10 +541,9 @@ export default function Home() {
       (c.distinctSubject || '').toLowerCase().includes(searchQuery.toLowerCase());
       
     const docDate = c.date ? new Date(c.date) : null;
-    const isTooOld = docDate && docDate < cutoffDate;
     
-    // Regla de retención: Eliminar de la vista cualquier concurso > 14 días
-    if (isTooOld) return false;
+    // Regla de retención estricta: Eliminar de la vista cualquier concurso > 14 días
+    if (!isWithinRetentionWindow(c, 14)) return false;
 
     const isPast = docDate && docDate < now;
     const hideMatch = !(hideInactive && isPast) && !hiddenCardIds.includes(c.id);

@@ -230,16 +230,52 @@ export function checkIsSegundoLlamado(item) {
     return segundoLlamadoRegex.test(textToScan);
 }
 
+export function isWithinRetentionWindow(item, days = 14) {
+    if (!item) return false;
+    const now = new Date();
+    const cutoff = new Date();
+    cutoff.setDate(now.getDate() - days);
+
+    // 1. Check event date (c.date)
+    if (item.date) {
+        const d = new Date(item.date);
+        if (!isNaN(d.getTime())) {
+            return d >= cutoff;
+        }
+    }
+
+    // 2. Check publication date (c.pubDate)
+    if (item.pubDate) {
+        const d = new Date(item.pubDate);
+        if (!isNaN(d.getTime())) {
+            return d >= cutoff;
+        }
+    }
+
+    // 3. Check detected timestamp (c.detectedAt)
+    if (item.detectedAt) {
+        const d = new Date(item.detectedAt);
+        if (!isNaN(d.getTime())) {
+            return d >= cutoff;
+        }
+    }
+
+    // 4. If no date is available, check for past month text mentions in current year
+    const text = `${item.title || ''} ${(item.fullContent || '').slice(0, 300)}`.toLowerCase();
+    const oldMonthMatch = text.match(/\b(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto)\b/);
+    if (oldMonthMatch && !text.includes('septiembre') && !text.includes('octubre') && !text.includes('noviembre') && !text.includes('diciembre')) {
+        return false;
+    }
+
+    return true;
+}
+
 export function checkAdminOpportunity(item) {
+    if (!item) return false;
     const adminCheck = checkAdminCredentialMatch(item);
     const isSegundo = checkIsSegundoLlamado(item);
 
-    return {
-        isAdminMatch: adminCheck.isMatch,
-        adminMatchedSubject: adminCheck.matchedSubject,
-        isSegundoLlamado: isSegundo,
-        isAdminOpportunity: adminCheck.isMatch && isSegundo
-    };
+    return Boolean(adminCheck.isMatch && isSegundo);
 }
 
 export function normalizeConcursoItem(item) {

@@ -91,6 +91,35 @@ function isLinkRecent(href) {
 }
 
 /**
+ * Strict 14-day retention check for any concurso object
+ */
+function isWithinRetentionWindow(item, days = 14) {
+    if (!item) return false;
+    const now = new Date();
+    const cutoff = new Date();
+    cutoff.setDate(now.getDate() - days);
+
+    if (item.date) {
+        const d = new Date(item.date);
+        if (!isNaN(d.getTime())) return d >= cutoff;
+    }
+    if (item.pubDate) {
+        const d = new Date(item.pubDate);
+        if (!isNaN(d.getTime())) return d >= cutoff;
+    }
+    if (item.detectedAt) {
+        const d = new Date(item.detectedAt);
+        if (!isNaN(d.getTime())) return d >= cutoff;
+    }
+    const text = `${item.title || ''} ${(item.fullContent || '').slice(0, 300)}`.toLowerCase();
+    const oldMonthMatch = text.match(/\b(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto)\b/);
+    if (oldMonthMatch && !text.includes('septiembre') && !text.includes('octubre') && !text.includes('noviembre') && !text.includes('diciembre')) {
+        return false;
+    }
+    return true;
+}
+
+/**
  * Utility to add business days (skipping Sat/Sun)
  */
 function addBusinessDays(startDate, days) {
@@ -600,9 +629,7 @@ async function run() {
     }
 
     // Strict 14-day (2 weeks) retention: purge anything older
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - 14);
-    const filteredByDate = results.filter(r => !r.date || new Date(r.date) >= cutoffDate);
+    const filteredByDate = results.filter(r => isWithinRetentionWindow(r, 14));
     results.length = 0; 
     results.push(...filteredByDate);
 
@@ -752,6 +779,32 @@ async function syncToFirestore(concursos, unclassified = []) {
             }
         }
         if (unclassBatchCount > 0) await unclassBatch.commit();
+
+        // Auto-purge old contests from Firestore (> 14 days)
+        try {
+            console.log('[ROBOT] Verificando y purgando publicaciones viejas (> 14 días) en Firestore...');
+            const allSnap = await concursosRef.get();
+            let pruneBatch = db.batch();
+            let pruneCount = 0;
+            let pruneBatchCount = 0;
+            for (const d of allSnap.docs) {
+                const docData = d.data();
+                if (!isWithinRetentionWindow(docData, 14)) {
+                    pruneBatch.delete(d.ref);
+                    pruneCount++;
+                    pruneBatchCount++;
+                    if (pruneBatchCount === 450) {
+                        await pruneBatch.commit();
+                        pruneBatch = db.batch();
+                        pruneBatchCount = 0;
+                    }
+                }
+            }
+            if (pruneBatchCount > 0) await pruneBatch.commit();
+            if (pruneCount > 0) console.log(`[ROBOT] Purgados exitosamente ${pruneCount} concursos obsoletos de Firestore.`);
+        } catch (pruneErr) {
+            console.warn('[ROBOT] Advertencia al purgar Firestore:', pruneErr.message);
+        }
         
         await db.collection('system').doc('robot_status').set({ 
             lastSync: admin.firestore.FieldValue.serverTimestamp(), 
