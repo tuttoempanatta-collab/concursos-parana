@@ -350,7 +350,7 @@ export default function ConcursoCard({ concurso, onHide, onTogglePin, isPinned, 
           )}
 
           {concurso.distinctSubject && (!concurso.primaryLlamado || !concurso.primaryLlamado.toLowerCase().includes(concurso.distinctSubject.toLowerCase())) && (
-            <span className="level-badge" title={concurso.distinctSubject} style={{background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
+            <span className="level-badge" title={concurso.distinctSubject} style={{background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)', wordBreak: 'break-word', whiteSpace: 'normal'}}>
               {concurso.distinctSubject}
             </span>
           )}
@@ -524,7 +524,7 @@ export default function ConcursoCard({ concurso, onHide, onTogglePin, isPinned, 
                   gap: '6px'
                 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontWeight: 600, color: '#f1f5f9', wordBreak: 'break-word', whiteSpace: 'normal', lineHeight: 1.25 }}>
                       {p.materia || concurso.distinctSubject || 'Materia a concursar'}
                     </div>
                     <div style={{ fontSize: '0.65rem', color: '#94a3b8', display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '1px' }}>
@@ -670,94 +670,96 @@ export default function ConcursoCard({ concurso, onHide, onTogglePin, isPinned, 
       )}
 
       <div className={`countdown-timer ${isUrgent ? 'urgent' : ''}`}>
-        <div className="detail-row" style={{ color: 'var(--text-main)', fontSize: '0.875rem' }}>
-          <Clock size={16} />
-          <span style={{ fontWeight: 600, color: themeColor }}>
-            {!timeLeft ? 'Fecha a confirmar' : isActive ? 'Concurso Activo' : 'Concurso Realizado'}
-          </span>
-        </div>
-        
-        {timeLeft && !timeLeft.isExpired && (
-          <div className="time-blocks">
-            {timeLeft.days > 0 && (
-              <>
-                <div className="time-block">
-                  <span className="time-value">{String(timeLeft.days).padStart(2, '0')}</span>
-                  <span className="time-label">DÍAS</span>
-                </div>
-                <div className="time-block">
-                  <span className="time-value" style={{opacity: 0.5}}>:</span>
-                </div>
-              </>
-            )}
-            <div className="time-block">
-              <span className="time-value">{String(timeLeft.hours).padStart(2, '0')}</span>
-              <span className="time-label">HRS</span>
-            </div>
-            <div className="time-block">
-              <span className="time-value" style={{opacity: 0.5}}>:</span>
-            </div>
-            <div className="time-block">
-              <span className="time-value">{String(timeLeft.minutes).padStart(2, '0')}</span>
-              <span className="time-label">MIN</span>
-            </div>
-             <div className="time-block">
-              <span className="time-value" style={{opacity: 0.5}}>:</span>
-            </div>
-            <div className="time-block">
-              <span className="time-value" style={{opacity: 0.8}}>{String(timeLeft.seconds).padStart(2, '0')}</span>
-              <span className="time-label">SEG</span>
-            </div>
+        <div className="countdown-header-row">
+          <div className="detail-row" style={{ color: 'var(--text-main)', fontSize: '0.85rem' }}>
+            <Clock size={15} />
+            <span style={{ fontWeight: 700, color: themeColor }}>
+              {!timeLeft ? 'Fecha a confirmar' : isActive ? 'Concurso Activo' : 'Concurso Realizado'}
+            </span>
           </div>
-        )}
+          
+          {timeLeft && !timeLeft.isExpired && (
+            <div className="time-blocks">
+              {timeLeft.days > 0 && (
+                <>
+                  <div className="time-block">
+                    <span className="time-value">{String(timeLeft.days).padStart(2, '0')}</span>
+                    <span className="time-label">DÍAS</span>
+                  </div>
+                  <div className="time-block">
+                    <span className="time-value" style={{opacity: 0.5}}>:</span>
+                  </div>
+                </>
+              )}
+              <div className="time-block">
+                <span className="time-value">{String(timeLeft.hours).padStart(2, '0')}</span>
+                <span className="time-label">HRS</span>
+              </div>
+              <div className="time-block">
+                <span className="time-value" style={{opacity: 0.5}}>:</span>
+              </div>
+              <div className="time-block">
+                <span className="time-value">{String(timeLeft.minutes).padStart(2, '0')}</span>
+                <span className="time-label">MIN</span>
+              </div>
+              <div className="time-block">
+                <span className="time-value" style={{opacity: 0.5}}>:</span>
+              </div>
+              <div className="time-block">
+                <span className="time-value" style={{opacity: 0.8}}>{String(timeLeft.seconds).padStart(2, '0')}</span>
+                <span className="time-label">SEG</span>
+              </div>
+            </div>
+          )}
+        </div>
 
         {isPast && !forceExpired && (
-          <div style={{fontSize: '0.8rem', color: '#34d399', marginTop: '0.4rem', fontWeight: 600}}>
+          <div style={{fontSize: '0.78rem', color: '#34d399', fontWeight: 600}}>
             ✓ Llevado a cabo {targetDate ? `el ${targetDate.toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit'})} (${targetDate.toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'})} hs)` : ''}
           </div>
         )}
 
         {concurso.llamadosSummary && (
-          <div style={{fontSize: '0.72rem', color: '#e2e8f0', marginTop: '0.4rem', background: 'rgba(255,255,255,0.05)', padding: '0.3rem 0.5rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.08)'}}>
+          <div style={{fontSize: '0.74rem', color: '#f1f5f9', background: 'rgba(255,255,255,0.06)', padding: '0.35rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', wordBreak: 'break-word', width: '100%', boxSizing: 'border-box'}}>
             <strong style={{color: '#fbbf24'}}>Convocatoria: </strong>{concurso.llamadosSummary}
           </div>
         )}
 
         {resolvedCaracteres.length > 0 && (
-          <div style={{fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.3rem', display: 'flex', alignItems: 'center', gap: '4px'}}>
+          <div style={{fontSize: '0.72rem', color: '#94a3b8', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px'}}>
             <strong style={{color: '#cbd5e1'}}>Designación:</strong>
             {resolvedCaracteres.map(c => `${c.codigo} (${c.nombre})`).join(' · ')}
           </div>
         )}
         
         {!timeLeft && !isExpired && (
-           <div style={{fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem'}}>
+           <div style={{fontSize: '0.72rem', color: 'var(--text-muted)'}}>
              Consultar detalle para horario exacto
            </div>
         )}
         
-        {/* Distance Button / Result directly besides timer */}
+        {/* Distance Button / Result */}
         {!isExpired && (
-            <div style={{marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+            <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.2rem'}}>
                 {distance ? (
-                    <span style={{fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-primario)', display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0.25rem 0.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: '4px'}}>
+                    <span style={{fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-primario)', display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0.2rem 0.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: '4px'}}>
                         <Route size={14} /> {distance}
                     </span>
                 ) : distanceError ? (
-                    <span style={{fontSize: '0.75rem', color: '#ef4444'}}>{distanceError}</span>
+                    <span style={{fontSize: '0.72rem', color: '#ef4444'}}>{distanceError}</span>
                 ) : (
                     <button 
                         onClick={handleFetchDistance}
                         disabled={loadingDistance || !userLocation}
                         style={{
-                            fontSize: '0.75rem', padding: '0.25rem 0.5rem', borderRadius: '4px',
-                            background: 'rgba(255,255,255,0.1)', border: '1px solid var(--border-light)',
+                            fontSize: '0.72rem', padding: '0.25rem 0.55rem', borderRadius: '6px',
+                            background: 'rgba(255,255,255,0.08)', border: '1px solid var(--border-light)',
                             color: 'var(--text-main)', cursor: (loadingDistance || !userLocation) ? 'not-allowed' : 'pointer',
-                            display: 'flex', alignItems: 'center', gap: '0.25rem', opacity: (!userLocation) ? 0.5 : 1
+                            display: 'flex', alignItems: 'center', gap: '0.35rem', opacity: (!userLocation) ? 0.6 : 1
                         }}
                         title={!userLocation ? "Esperando ubicación..." : "Calcular distancia aproximada"}
                     >
-                        <MapIcon size={14} className={loadingDistance ? 'spinner' : ''} style={loadingDistance ? {marginBottom: 0, width: 14, height: 14, border: 'none'} : {}} /> 
+                        <MapIcon size={13} className={loadingDistance ? 'spinner' : ''} style={loadingDistance ? {marginBottom: 0, width: 13, height: 13, border: 'none'} : {}} /> 
                         {loadingDistance ? 'Calculando...' : 'Ver Distancia'}
                     </button>
                 )}
@@ -765,7 +767,7 @@ export default function ConcursoCard({ concurso, onHide, onTogglePin, isPinned, 
         )}
       </div>
 
-      <div className="card-actions" style={{display: 'flex', gap: '6px'}}>
+      <div className="card-actions" style={{display: 'flex', gap: '6px', flexWrap: 'wrap', width: '100%'}}>
         <a 
           href={`https://www.google.com/maps/dir/?api=1&origin=${userLocation ? `${userLocation.lat},${userLocation.lng}` : ''}&destination=${encodeURIComponent(mapQuery)}`}
           target="_blank" 

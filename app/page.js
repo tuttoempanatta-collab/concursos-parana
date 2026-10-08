@@ -180,7 +180,7 @@ export default function Home() {
           const normalized = validRecent.map(normalizeConcursoItem);
           setConcursos(normalized);
           setLoading(false);
-          if (!Capacitor.isNativePlatform()) return; // On web, we are done with static data
+          return; // Tanto la web como el APK utilizan la misma base sincronizada con Firestore
       }
 
       if (Capacitor.isNativePlatform()) {
@@ -295,7 +295,7 @@ export default function Home() {
                      let priority = 3;
                       if (eventDate && eventDate >= new Date().setHours(0,0,0,0) && eventDate <= new Date().setHours(47,59,59,999)) priority = 1;
                       else if (nivel === 'Secundario' && !eventDate) priority = 1;
-                      else if (eventDate && eventDate > endOfTomorrow) priority = 2;
+                      else if (eventDate && eventDate > new Date(Date.now() + 172800000)) priority = 2;
                      
                       if(!scrapedConcursos.find(c => c.link === fullHref)) {
                           // Stable hash ID based on link
@@ -597,13 +597,13 @@ export default function Home() {
   return (
     <div className="container">
       <PresenceManager onCountChange={setLiveCount} />
-      <header className="header" style={{position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-        <div>
+      <header className="header app-header">
+        <div className="header-title-container">
            <h1>Concursos Docentes</h1>
            <p>Gestión ágil y dinámica para el Departamento Paraná</p>
         </div>
-        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem'}}>
-          <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+        <div className="header-actions-col">
+          <div className="header-top-row">
             <a href="/admin" style={{fontSize: '0.7rem', color: 'rgba(255,255,255,0.05)', textDecoration: 'none'}}>Admin</a>
             <div style={{background: 'rgba(255,255,255,0.1)', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-muted)'}}>
               v2.4.9-ROBOT-MONITOR-V2
@@ -651,7 +651,7 @@ export default function Home() {
               );
             })()}
           </div>
-          <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end'}}>
+          <div className="header-buttons-row">
             {/* Real-time Presence Badge */}
             <div className="live-badge" title="Usuarios mirando el sitio ahora mismo">
               <div className="live-dot"></div>
