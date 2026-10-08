@@ -26,10 +26,12 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Visibility & Pin State
+  // Visibility, Pin & Seen State
   const [hideInactive, setHideInactive] = useState(false);
   const [hiddenCardIds, setHiddenCardIds] = useState([]);
   const [pinnedCardIds, setPinnedCardIds] = useState([]);
+  const [seenCardIds, setSeenCardIds] = useState([]);
+  const [hideSeen, setHideSeen] = useState(false);
   
   // Filter state
   const [activeFilters, setActiveFilters] = useState({
@@ -76,6 +78,13 @@ export default function Home() {
         setPinnedCardIds(JSON.parse(savedPinned));
       } catch (e) { console.error("Error loading pinned contests", e); }
     }
+
+    const savedSeen = localStorage.getItem('seenConcursos');
+    if (savedSeen) {
+      try {
+        setSeenCardIds(JSON.parse(savedSeen));
+      } catch (e) { console.error("Error loading seen contests", e); }
+    }
     
     // Fetch dynamic settings from Firestore
     const fetchSettings = async () => {
@@ -99,8 +108,17 @@ export default function Home() {
     localStorage.setItem('pinnedConcursos', JSON.stringify(pinnedCardIds));
   }, [pinnedCardIds]);
 
+  // Persistence: Save seen IDs on change
+  useEffect(() => {
+    localStorage.setItem('seenConcursos', JSON.stringify(seenCardIds));
+  }, [seenCardIds]);
+
   const handleTogglePin = (id) => {
     setPinnedCardIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleToggleSeen = (id) => {
+    setSeenCardIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
   // Visitor Counter Logic
@@ -455,6 +473,15 @@ export default function Home() {
     setHiddenCardIds([]);
   };
 
+  const handleMarkAllVisibleSeen = () => {
+    const idsToMark = filteredConcursos.map(c => c.id);
+    setSeenCardIds(prev => Array.from(new Set([...prev, ...idsToMark])));
+  };
+
+  const handleClearAllSeen = () => {
+    setSeenCardIds([]);
+  };
+
   const now = new Date();
   const cutoffDate = new Date();
   cutoffDate.setDate(now.getDate() - 14); // Estricto a 14 días (2 semanas)
@@ -483,6 +510,9 @@ export default function Home() {
   };
 
   const validConcursos = concursos.filter(c => isWithinRetentionWindow(c, 14));
+
+  const totalSeenCount = validConcursos.filter(c => seenCardIds.includes(c.id)).length;
+  const totalUnseenCount = Math.max(0, validConcursos.length - totalSeenCount);
 
   const uniqueSchools = Array.from(new Set(
     validConcursos
@@ -547,6 +577,7 @@ export default function Home() {
 
     const isPast = docDate && docDate < now;
     const hideMatch = !(hideInactive && isPast) && !hiddenCardIds.includes(c.id);
+    if (hideSeen && seenCardIds.includes(c.id)) return false;
       
     return levelMatch && schoolMatch && cityMatch && searchMatch && hideMatch;
   });
@@ -937,11 +968,73 @@ export default function Home() {
             Mostrando {filteredConcursos.length} de {concursos.length} resultados.
           </div>
 
+          {/* Tracking & Seen Controls */}
+          <div style={{marginTop: '1.5rem', borderTop: '1px solid var(--border-light)', paddingTop: '1.25rem'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem'}}>
+              <h3 style={{fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', margin: 0}}>
+                Control de Lectura
+              </h3>
+              <span style={{fontSize: '0.72rem', fontWeight: 800, color: totalUnseenCount > 0 ? '#38bdf8' : '#10b981', background: totalUnseenCount > 0 ? 'rgba(56, 189, 248, 0.15)' : 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '10px'}}>
+                {totalUnseenCount > 0 ? `🆕 ${totalUnseenCount} sin ver` : '✓ Al día'}
+              </span>
+            </div>
+
+            <label style={{display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', marginBottom: '0.75rem', color: 'var(--text-main)', fontSize: '0.85rem'}}>
+              <input 
+                type="checkbox" 
+                checked={hideSeen}
+                onChange={(e) => setHideSeen(e.target.checked)}
+                style={{accentColor: '#10b981', width: '16px', height: '16px', cursor: 'pointer'}}
+              />
+              <span>Ocultar ya Vistos ({totalSeenCount})</span>
+            </label>
+
+            <div style={{display: 'flex', gap: '0.5rem', marginTop: '0.5rem'}}>
+              <button 
+                onClick={handleMarkAllVisibleSeen}
+                style={{
+                  flex: 1,
+                  background: 'rgba(16, 185, 129, 0.12)',
+                  border: '1px solid rgba(16, 185, 129, 0.35)',
+                  color: '#34d399',
+                  padding: '0.45rem 0.5rem',
+                  borderRadius: '6px',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                title="Marcar todos los concursos actualmente visibles como vistos"
+              >
+                ✓ Marcar visibles
+              </button>
+              {seenCardIds.length > 0 && (
+                <button 
+                  onClick={handleClearAllSeen}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    color: '#f87171',
+                    padding: '0.45rem 0.6rem',
+                    borderRadius: '6px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  title="Reiniciar casilleros de vistos"
+                >
+                  Reiniciar
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Visibility Controls */}
-          <div style={{marginTop: '2rem', borderTop: '1px solid var(--border-light)', paddingTop: '1.5rem'}}>
-            <h3 style={{fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '1rem'}}>Visualización</h3>
+          <div style={{marginTop: '1.5rem', borderTop: '1px solid var(--border-light)', paddingTop: '1.25rem'}}>
+            <h3 style={{fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '0.75rem'}}>Visualización</h3>
             
-            <label style={{display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', marginBottom: '1rem', color: 'var(--text-main)'}}>
+            <label style={{display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', marginBottom: '1rem', color: 'var(--text-main)', fontSize: '0.85rem'}}>
               <input 
                 type="checkbox" 
                 checked={hideInactive}
@@ -1033,6 +1126,8 @@ export default function Home() {
                         onHide={() => handleHideCard(concurso.id)}
                         onTogglePin={() => handleTogglePin(concurso.id)}
                         isPinned={true}
+                        isSeen={seenCardIds.includes(concurso.id)}
+                        onToggleSeen={() => handleToggleSeen(concurso.id)}
                         userLocation={userLocation}
                       />
                     ))}
@@ -1059,6 +1154,8 @@ export default function Home() {
                         onHide={() => handleHideCard(concurso.id)}
                         onTogglePin={() => handleTogglePin(concurso.id)}
                         isPinned={pinnedCardIds.includes(concurso.id)}
+                        isSeen={seenCardIds.includes(concurso.id)}
+                        onToggleSeen={() => handleToggleSeen(concurso.id)}
                         userLocation={userLocation}
                         isNew={true}
                       />
@@ -1085,6 +1182,8 @@ export default function Home() {
                         onHide={() => handleHideCard(concurso.id)}
                         onTogglePin={() => handleTogglePin(concurso.id)}
                         isPinned={pinnedCardIds.includes(concurso.id)}
+                        isSeen={seenCardIds.includes(concurso.id)}
+                        onToggleSeen={() => handleToggleSeen(concurso.id)}
                         userLocation={userLocation}
                         isToday={true}
                       />
@@ -1112,6 +1211,8 @@ export default function Home() {
                         onHide={() => handleHideCard(concurso.id)}
                         onTogglePin={() => handleTogglePin(concurso.id)}
                         isPinned={pinnedCardIds.includes(concurso.id)}
+                        isSeen={seenCardIds.includes(concurso.id)}
+                        onToggleSeen={() => handleToggleSeen(concurso.id)}
                         userLocation={userLocation}
                       />
                     ))}
@@ -1138,6 +1239,8 @@ export default function Home() {
                         onHide={() => handleHideCard(concurso.id)}
                         onTogglePin={() => handleTogglePin(concurso.id)}
                         isPinned={pinnedCardIds.includes(concurso.id)}
+                        isSeen={seenCardIds.includes(concurso.id)}
+                        onToggleSeen={() => handleToggleSeen(concurso.id)}
                         userLocation={userLocation}
                       />
                     ))}
@@ -1164,6 +1267,8 @@ export default function Home() {
                         onHide={() => handleHideCard(concurso.id)}
                         onTogglePin={() => handleTogglePin(concurso.id)}
                         isPinned={pinnedCardIds.includes(concurso.id)}
+                        isSeen={seenCardIds.includes(concurso.id)}
+                        onToggleSeen={() => handleToggleSeen(concurso.id)}
                         userLocation={userLocation}
                       />
                     ))}

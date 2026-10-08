@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { differenceInSeconds, parseISO } from 'date-fns';
-import { Clock, CalendarDays, ExternalLink, MapPin, EyeOff, Map as MapIcon, Route, BookOpen, Pin } from 'lucide-react';
+import { Clock, CalendarDays, ExternalLink, MapPin, EyeOff, Map as MapIcon, Route, BookOpen, Pin, CheckSquare, Square } from 'lucide-react';
 
 // Haversine formula to calculate distance between two coordinates
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -18,7 +18,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return d;
 }
 
-export default function ConcursoCard({ concurso, onHide, onTogglePin, isPinned, userLocation, isRecent, isNew, isToday, isExpired: forceExpired }) {
+export default function ConcursoCard({ concurso, onHide, onTogglePin, isPinned, onToggleSeen, isSeen, userLocation, isRecent, isNew, isToday, isExpired: forceExpired }) {
   const [timeLeft, setTimeLeft] = useState(null);
   const [showAllPlazas, setShowAllPlazas] = useState(false);
 
@@ -255,12 +255,13 @@ export default function ConcursoCard({ concurso, onHide, onTogglePin, isPinned, 
 
   return (
     <div 
-      className={`glass-panel concurso-card ${forceExpired ? 'expired' : ''}`} 
+      className={`glass-panel concurso-card ${forceExpired ? 'expired' : ''} ${isSeen ? 'seen-card' : ''}`} 
       data-level={concurso.nivel}
       style={{
         boxShadow: cardBoxShadow,
         borderColor: cardBorderColor,
-        background: cardBackground
+        background: cardBackground,
+        opacity: isSeen ? 0.88 : 1
       }}
     >
       {/* Decorative top bar */}
@@ -390,9 +391,55 @@ export default function ConcursoCard({ concurso, onHide, onTogglePin, isPinned, 
               📌 FIJADO AL TOPE
             </span>
           )}
+
+          {isSeen && (
+            <span 
+              className="level-badge" 
+              style={{
+                background: 'rgba(16, 185, 129, 0.15)',
+                color: '#34d399',
+                border: '1px solid rgba(16, 185, 129, 0.35)',
+                fontWeight: 800,
+                letterSpacing: '0.03em',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '3px'
+              }}
+            >
+              ✓ VISTO
+            </span>
+          )}
         </div>
 
-        <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: '5px'}}>
+          {onToggleSeen && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleSeen();
+              }}
+              title={isSeen ? "Marcar como NO visto / No leído" : "Marcar concurso como VISTO"}
+              style={{
+                background: isSeen ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                border: isSeen ? '1.5px solid #10b981' : '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '6px',
+                color: isSeen ? '#34d399' : 'var(--text-muted)',
+                cursor: 'pointer',
+                padding: '0.2rem 0.45rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                transition: 'all 0.2s ease'
+              }}
+              className="seen-btn"
+            >
+              {isSeen ? <CheckSquare size={13} color="#34d399" /> : <Square size={13} />}
+              <span>{isSeen ? 'Visto' : 'Visto?'}</span>
+            </button>
+          )}
+
           {onTogglePin && (
             <button
               onClick={(e) => {

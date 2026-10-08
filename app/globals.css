@@ -500,3 +500,11 @@ body {
   }
 }
 
+.seen-card {
+  transition: opacity 0.25s ease, border-color 0.25s ease;
+}
+
+.seen-btn:hover {
+  filter: brightness(1.2);
+}
+
