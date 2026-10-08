@@ -627,6 +627,47 @@ async function run() {
         return (a.cgeOrder ?? 999) - (b.cgeOrder ?? 999);
     });
 
+    // Update and enrich AI Schools Catalog
+    try {
+        let catalog = { totalSchools: 0, tecnicasCount: 0, schools: [] };
+        if (fs.existsSync('ai_schools.json')) {
+            catalog = JSON.parse(fs.readFileSync('ai_schools.json', 'utf8'));
+        }
+        const schoolMap = new Map();
+        if (catalog.schools && Array.isArray(catalog.schools)) {
+            for (const s of catalog.schools) {
+                if (s.name) schoolMap.set(s.name, s);
+            }
+        }
+        for (const u of unique) {
+            if (u.schoolName && u.schoolName !== 'Escuela Departamental' && u.schoolName.length > 3) {
+                if (!schoolMap.has(u.schoolName)) {
+                    schoolMap.set(u.schoolName, {
+                        name: u.schoolName,
+                        nivel: u.nivel || 'No especificado',
+                        city: (u.department || 'Paraná').replace('(Dpto)', '').trim(),
+                        contestsCount: 1
+                    });
+                } else {
+                    const existing = schoolMap.get(u.schoolName);
+                    existing.contestsCount = (existing.contestsCount || 0) + 1;
+                    if (u.nivel === 'Secundaria Técnica') existing.nivel = 'Secundaria Técnica';
+                }
+            }
+        }
+        const updatedSchools = Array.from(schoolMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+        catalog.updatedAt = new Date().toISOString();
+        catalog.totalSchools = updatedSchools.length;
+        catalog.tecnicasCount = updatedSchools.filter(s => s.nivel === 'Secundaria Técnica').length;
+        catalog.schools = updatedSchools;
+        fs.writeFileSync('ai_schools.json', JSON.stringify(catalog, null, 2));
+        if (fs.existsSync('public')) fs.writeFileSync(path.join('public', 'ai_schools.json'), JSON.stringify(catalog, null, 2));
+        if (fs.existsSync('out')) fs.writeFileSync(path.join('out', 'ai_schools.json'), JSON.stringify(catalog, null, 2));
+        console.log(`[AI ENGINE] Catálogo de escuelas actualizado: ${updatedSchools.length} escuelas (${catalog.tecnicasCount} técnicas).`);
+    } catch (e) {
+        console.warn('[AI ENGINE] Error actualizando ai_schools.json:', e.message);
+    }
+
     if (!fs.existsSync('public')) fs.mkdirSync('public');
     if (!fs.existsSync('out')) fs.mkdirSync('out');
     fs.writeFileSync('parsed_data.json', JSON.stringify(unique, null, 2));

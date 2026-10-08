@@ -795,56 +795,100 @@ async function analyzeConcurso(content, title, urlYear = 2026) {
     };
 }
 
+function formatCanonicalSchoolName(name) {
+    if (!name || name === 'Escuela Departamental') return name;
+    let s = name.trim().replace(/[“”″«»]/g, '"');
+    s = s.replace(/\s+A\.?F\.?P\.?$/i, '');
+    s = s.replace(/(?:E\.?E\.?T\.?|EET)\s*(?:N[°ºo\.]*\s*)?(\d+)/i, 'E.E.T. Nº $1');
+    s = s.replace(/(?:E\.?E\.?A\.?T\.?|EEAT)\s*(?:N[°ºo\.]*\s*)?(\d+)/i, 'E.E.A.T. Nº $1');
+    s = s.replace(/\b(?:Escuela\s+Secundaria(?:\s*[-–—]?\s*Orientada)?|Esc\.\s*Sec\.?)\s*(?:N[°ºo\.]*\s*)?(\d+)/i, 'Escuela Secundaria Nº $1');
+    s = s.replace(/\b(?:ESJA|E\.?S\.?J\.?A\.?)\s*(?:N[°ºo\.]*\s*)?(\d+)/i, 'ESJA Nº $1');
+    s = s.replace(/\b(?:Escuela\s+Primaria(?:\s+de\s+J[oó]venes\s+y\s+Adultos)?|Esc\.\s*Prim\.?)\s*(?:N[°ºo\.]*\s*)?(\d+)/i, 'Escuela Primaria Nº $1');
+    s = s.replace(/\bEscuela\s+NINA\s*(?:N[°ºo\.]*\s*)?(\d+)/i, 'Escuela NINA Nº $1');
+    s = s.replace(/(\d+)\"/g, '$1 "');
+    s = s.replace(/\s+/g, ' ');
+
+    s = s.replace(/"([^"]+)"/g, (match, p1) => {
+        if (p1 === p1.toUpperCase() && p1.length > 3) {
+            const tc = p1.toLowerCase().replace(/(^|\s)\S/g, l => l.toUpperCase());
+            return '"' + tc + '"';
+        }
+        return match;
+    });
+
+    return s.trim();
+}
+
 /**
  * Extracts school name cleanly from title or beginning of content
  */
 function extractSchoolName(title, content = '') {
-    const cleanStr = (s) => s ? s.trim()
-        .replace(/^desconvoca(?:toria)?\s*(?:parcialmente\s*)?(?:de|del)?\s*/i, '')
-        .replace(/^(?:por\s+)?(?:presentaci[oó]n\s*de\s*)?proyectos?\s*(?:de\s*)?/i, '')
-        .replace(/\s*[-–—:]*\s*\b(?:cue|localidad)\b.*$/i, '')
-        .replace(/^[-–—\s:\.]+|[-–—\s:\.]+$/g, '')
-        .trim() : '';
+    const cleanStr = (s) => {
+        if (!s) return '';
+        let str = s.trim().replace(/[“”″«»]/g, '"');
+        str = str.replace(/^(?:dptal\.?\s*pn[aá]\.?|dde\s*paran[aá]|dpatal\s*,\s*pn[aá]\.?)\s*[-–—:\.]*\s*/i, '');
+        str = str.replace(/^(?:1[°º]|2[°º]|3[°º]|1er|2do|3er|1\.er|2\.do|primer[oa]?|segund[oa]?|tercer[oa]?)\s*(?:desconvocatoria(?:\s*parcial)?|convocatoria|llamado)(?:\s*(?:a\s*)?concurso)?\s*[-–—:\.]*\s*/i, '');
+        str = str.replace(/^(?:desconvocatoria(?:\s*parcial)?|desconvoca|convocatoria|llamado)(?:\s*(?:a\s*)?concurso)?\s*[-–—:\.]*\s*/i, '');
+        str = str.replace(/^(?:por\s+presentaci[oó]n\s*de\s*proyectos?|por\s*proyectos?|talleres\s*escuela\s*nina|supervisi[oó]n[^\-–—]*|horas\s*c[aá]tedras?|horas\s*nina|cargo[^\-–—]*)\s*[-–—:\.]*\s*/i, '');
+        str = str.replace(/\s*[-–—:]*\s*\b(?:cue|localidad|tel[eé]f)\b.*$/i, '');
+        str = str.replace(/^[-–—\s:\.]+|[-–—\s:\.]+$/g, '');
+        return str.trim();
+    };
 
-    const schoolRegexQuoted = /(?:E\.?E\.?T\.?|E\.?E\.?A\.?T\.?|Escuela\s*Secundaria|Escuela\s*Nina|Escuela\s*Primaria|Escuela|Esc\.\s*Sec\.?|Esc\.\s*N[roº°\.]*|Esc\.|E\.?S\.?J\.?A\.?|Colegio|Liceo|Centro\s*de\s*(?:Arte|Educaci[oó]n\s*F[ií]sica))[^–—\(\)]*?[“"'][^”"']+?[”"']/i;
-    const schoolRegexUnquoted = /(?:E\.?E\.?T\.?|E\.?E\.?A\.?T\.?|Escuela\s*Secundaria|Escuela\s*Nina|Escuela\s*Primaria|Esc\.\s*Sec\.?|E\.?S\.?J\.?A\.?|Colegio|Liceo)\s*(?:N[°ºo\.]*\s*\d+)?\s+([A-Za-zÁÉÍÓÚÑa-z\s]{3,35})(?=\s*[-–—\(\)\.,]|\s*\bCUE\b|\s*\bLocalidad\b|$)/i;
+    const quotedRegex = /(?:E\.?E\.?T\.?|E\.?E\.?A\.?T\.?|E\.?T\.?|Escuela\s+Secundaria(?:\s*[-–—]?\s*Orientada)?|Escuela\s+Normal(?:\s+Superior)?|Escuela\s+Primaria(?:\s+de\s+J[oó]venes\s+y\s+Adultos|\s+NINA)?|Escuela\s+NINA|Escuela\s+Integral|Escuela\s+Especial|Escuela|Esc\.\s*Sec\.?|Esc\.\s*Prim\.?|Esc\.\s*N[°ºo\.]*|ESJA|E\.?S\.?J\.?A\.?|EPJA|E\.?P\.?J\.?A\.?|Colegio\s+Nacional|Colegio|Liceo|Instituto\s+de\s+Educaci[oó]n\s+Superior|Instituto\s+Superior|ISFD|IES|Centro\s+de\s+(?:Arte|Educaci[oó]n\s*F[ií]sica)|CEF)[^–—\(\)]*?"[^"]+?"(?:\s*A\.?F\.?P\.?)?/i;
 
-    // 1. Check title
+    const unquotedRegex = /(?:E\.?E\.?T\.?|E\.?E\.?A\.?T\.?|E\.?T\.?|Escuela\s+Secundaria(?:\s*[-–—]?\s*Orientada)?|Escuela\s+Normal(?:\s+Superior)?|Escuela\s+Primaria(?:\s+de\s+J[oó]venes\s+y\s+Adultos|\s+NINA)?|Escuela\s+NINA|Escuela\s+Integral|Escuela\s+Especial|Esc\.\s*Sec\.?|Esc\.\s*Prim\.?|ESJA|E\.?S\.?J\.?A\.?|EPJA|Colegio\s+Nacional|Colegio|Liceo|Instituto\s+de\s+Educaci[oó]n\s+Superior|Instituto\s+Superior|Centro\s+de\s+(?:Arte|Educaci[oó]n\s*F[ií]sica))\s*(?:N[°ºo\.]*\s*\d+)?\s+([A-Za-zÁÉÍÓÚÑa-z\s]{3,35})(?=\s*[-–—\(\)\.,]|\s*\bCUE\b|\s*\bLocalidad\b|$)/i;
+
+    const isValidSchool = (name) => {
+        if (!name || name === 'Escuela Departamental' || name.length < 4) return false;
+        if (/^(?:ciclo\s+lectivo|convoca|desconvoca|dpta|dde|primer|segundo|llamado|por\s+proyecto|horas\s+c)/i.test(name)) return false;
+        return /(?:escuela|e\.?e\.?t|e\.?e\.?a\.?t|e\.?t\b|esja|epja|colegio|liceo|instituto|centro\s+de\s+(?:arte|educaci[oó]n)|cef|isdf|ies)/i.test(name);
+    };
+
     if (title) {
-        const qm = title.match(schoolRegexQuoted);
-        if (qm) return cleanStr(qm[0]);
-        const uqm = title.match(schoolRegexUnquoted);
-        if (uqm) return cleanStr(uqm[0]);
+        const cleanTitle = cleanStr(title);
+        const qm = cleanTitle.match(quotedRegex);
+        if (qm) {
+            const sch = formatCanonicalSchoolName(cleanStr(qm[0]));
+            if (isValidSchool(sch)) return sch;
+        }
+        const uqm = cleanTitle.match(unquotedRegex);
+        if (uqm) {
+            const sch = formatCanonicalSchoolName(cleanStr(uqm[0]));
+            if (isValidSchool(sch)) return sch;
+        }
     }
 
-    // 2. Check content (first 600 chars)
     if (content) {
-        const topContent = content.slice(0, 600);
-        const qm = topContent.match(schoolRegexQuoted);
-        if (qm) return cleanStr(qm[0]);
-        const uqm = topContent.match(schoolRegexUnquoted);
-        if (uqm) return cleanStr(uqm[0]);
+        const topContent = cleanStr(content.slice(0, 600));
+        const qm = topContent.match(quotedRegex);
+        if (qm) {
+            const sch = formatCanonicalSchoolName(cleanStr(qm[0]));
+            if (isValidSchool(sch)) return sch;
+        }
+        const uqm = topContent.match(unquotedRegex);
+        if (uqm) {
+            const sch = formatCanonicalSchoolName(cleanStr(uqm[0]));
+            if (isValidSchool(sch)) return sch;
+        }
     }
 
-    // 3. Clean fallback from title
-    let fallback = (title || '')
-        .replace(/^(?:dptal\.?\s*pn[aá]\.?|dde\s*parana)\s*[-–—:\.]*\s*/i, '')
-        .replace(/(?:primer|1°|1º|1er|segundo|2°|2º|2do|tercer|3°)\s*llamado\s*(?:a\s*concurso)?\s*[-–—:\.]*\s*/i, '')
-        .replace(/llamado\s*a\s*concursos?\s*[-–—:\.]*\s*/i, '')
-        .replace(/convoca(?:\s*a\s*concurso)?\s*[-–—:\.]*\s*/i, '')
-        .replace(/desconvoca(?:toria)?\s*(?:parcialmente\s*)?(?:llamado\s*a\s*concurso)?\s*[-–—:\.]*\s*/i, '')
-        .replace(/horas\s*c[aá]tedras?\s*[-–—:\.]*\s*/i, '')
-        .split(/–|-|\(/)[0]
-        .trim();
+    if (title && /(?:escuela|eet|eeat|esja|colegio|liceo|instituto|ceef)/i.test(title)) {
+        let fallback = cleanStr(title).split(/–|-|\(/)[0].trim();
+        if (fallback.length > 5) {
+            const sch = formatCanonicalSchoolName(fallback);
+            if (isValidSchool(sch)) return sch;
+        }
+    }
 
-    return fallback.length > 5 ? fallback : 'Escuela Departamental';
+    return 'Escuela Departamental';
 }
 
 /**
  * Classifies educational level with explicit priority for Technical Secondary (EET / EEAT)
  */
-function classifyLevel(title, content = '') {
-    const text = `${title || ''} ${(content || '').slice(0, 300)}`.toLowerCase();
+function classifyLevel(title, content = '', schoolName = '') {
+    const text = `${schoolName || ''} ${title || ''} ${(content || '').slice(0, 300)}`.toLowerCase();
 
     // 1. Technical Secondary Schools (EET, EEAT, Técnica, Agrotécnica)
     if (
@@ -852,7 +896,8 @@ function classifyLevel(title, content = '') {
         /\be\.?e\.?a\.?t\.?\b/i.test(text) ||
         /t[eé]cnica/i.test(text) ||
         /agrot[eé]cnica/i.test(text) ||
-        /\be\.?t\.?\s*n[°º]?/i.test(text)
+        /\be\.?t\.?\s*n[°º]?/i.test(text) ||
+        (schoolName && /e\.?e\.?t\.?/i.test(schoolName))
     ) {
         return 'Secundaria Técnica';
     }
@@ -945,6 +990,7 @@ module.exports = {
     analyzeConcurso,
     instructRobotForPublishing,
     extractSchoolName,
+    formatCanonicalSchoolName,
     classifyLevel,
     extractDeclaredDate,
     loadPatterns,

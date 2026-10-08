@@ -9,6 +9,13 @@ import { RefreshCw, Search, Heart, X, Users, Activity, ExternalLink, Bell, Star 
 
 import { db } from '../firebase.config';
 import { collection, getDocs, query, orderBy, doc, getDoc, setDoc, updateDoc, increment, onSnapshot } from 'firebase/firestore';
+import { 
+  normalizeConcursoItem, 
+  extractSchoolName, 
+  formatCanonicalSchoolName,
+  classifyLevel, 
+  checkAdminCredentialMatch 
+} from '../utils/concursoNormalizer';
 
 export default function Home() {
   const [concursos, setConcursos] = useState([]);
@@ -148,7 +155,8 @@ export default function Home() {
       }
 
       if (data.length > 0) {
-          setConcursos(data);
+          const normalized = data.map(normalizeConcursoItem);
+          setConcursos(normalized);
           setLoading(false);
           if (!Capacitor.isNativePlatform()) return; // On web, we are done with static data
       }
@@ -361,8 +369,9 @@ export default function Home() {
         }
       }
       
+      const normalizedFinal = finalData.map(normalizeConcursoItem);
       // Sort by original CGE publication order (0 is newest)
-      const sorted = finalData.sort((a, b) => {
+      const sorted = normalizedFinal.sort((a, b) => {
           const orderA = typeof a.cgeOrder === 'number' ? a.cgeOrder : 9999;
           const orderB = typeof b.cgeOrder === 'number' ? b.cgeOrder : 9999;
           if (orderA !== orderB) return orderA - orderB;
@@ -432,12 +441,30 @@ export default function Home() {
   const startOfDayAfter = new Date(startOfToday.getTime() + 172800000);
   const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(now);
 
+  const resolveLevel = (c) => {
+    if (!c) return 'No especificado';
+    if (c.nivel === 'Secundaria Técnica') return 'Secundaria Técnica';
+    const sch = c.schoolName || '';
+    const t = `${sch} ${c.title || ''} ${(c.fullContent || '').slice(0, 300)}`.toLowerCase();
+    if (/(?:\be\.?e\.?t\.?\b|\be\.?e\.?a\.?t\.?\b|t[eé]cnica|agrot[eé]cnica|\be\.?t\.?\s*n[°º]?)/i.test(t)) {
+      return 'Secundaria Técnica';
+    }
+    return c.nivel || 'No especificado';
+  };
+
+  const resolveSchoolName = (c) => {
+    if (c.schoolName && c.schoolName !== 'Escuela Departamental' && c.schoolName !== 'ES' && c.schoolName !== 'Es') {
+      return formatCanonicalSchoolName(c.schoolName);
+    }
+    return extractSchoolName(c.title, c.fullContent);
+  };
+
   const uniqueSchools = Array.from(new Set(
     concursos
-      .map(c => c.schoolName)
+      .map(c => resolveSchoolName(c))
       .filter(Boolean)
       .filter(s => s !== 'Escuela Departamental' && s.length > 3)
-  )).sort();
+  )).sort((a, b) => a.localeCompare(b));
 
   const uniqueCities = Array.from(new Set(
     concursos
@@ -445,26 +472,32 @@ export default function Home() {
       .filter(Boolean)
   )).sort();
 
-  const adminMatchesList = concursos.filter(c => c.isAdminMatch);
+  const adminMatchesList = concursos.filter(c => {
+    if (c.isAdminMatch !== undefined) return c.isAdminMatch;
+    return checkAdminCredentialMatch(c).isMatch;
+  });
 
   const filteredConcursos = concursos.filter(c => {
     // 1. Level filter
-    const levelMatch = activeFilters[c.nivel] || (c.nivel === 'No especificado' && activeFilters['Otro']);
+    const cLevel = resolveLevel(c);
+    const levelMatch = activeFilters[cLevel] || (cLevel === 'No especificado' && activeFilters['Otro']);
     
     // 2. School filter
-    const schoolMatch = !selectedSchool || c.schoolName === selectedSchool;
+    const cSchool = resolveSchoolName(c);
+    const schoolMatch = !selectedSchool || cSchool === selectedSchool;
 
     // 3. City filter
     const cCity = (c.department || '').replace('(Dpto)', '').trim();
     const cityMatch = !selectedCity || cCity.toLowerCase() === selectedCity.toLowerCase();
 
     // 4. Admin match filter
-    const adminMatch = !onlyAdminMatches || c.isAdminMatch;
+    const cIsAdmin = c.isAdminMatch !== undefined ? c.isAdminMatch : checkAdminCredentialMatch(c).isMatch;
+    const adminMatch = !onlyAdminMatches || cIsAdmin;
 
     // 5. Search query
     const searchMatch = searchQuery === '' || 
       (c.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
-      (c.schoolName || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+      cSchool.toLowerCase().includes(searchQuery.toLowerCase()) || 
       (c.department || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.primaryLlamado || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.materiasSummary || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -686,8 +719,9 @@ export default function Home() {
           <div className="filter-group">
             {Object.keys(activeFilters).map(level => {
               const count = concursos.filter(c => {
-                if (level === 'Otro') return c.nivel === 'Otro' || c.nivel === 'No especificado';
-                return c.nivel === level;
+                const cL = resolveLevel(c);
+                if (level === 'Otro') return cL === 'Otro' || cL === 'No especificado';
+                return cL === level;
               }).length;
               const color = level === 'Secundaria Técnica' 
                 ? 'var(--color-secundaria-tecnica)' 
@@ -867,7 +901,7 @@ export default function Home() {
                     {concursosNuevos.map(concurso => (
                       <ConcursoCard 
                         key={concurso.id} 
-                        concurso={concurso} 
+                        concurso={{ ...concurso, nivel: resolveLevel(concurso), schoolName: resolveSchoolName(concurso) }} 
                         onHide={() => handleHideCard(concurso.id)}
                         userLocation={userLocation}
                         isNew={true}
@@ -886,7 +920,7 @@ export default function Home() {
                     {concursosHoy.map(concurso => (
                       <ConcursoCard 
                         key={concurso.id} 
-                        concurso={concurso} 
+                        concurso={{ ...concurso, nivel: resolveLevel(concurso), schoolName: resolveSchoolName(concurso) }} 
                         onHide={() => handleHideCard(concurso.id)}
                         userLocation={userLocation}
                         isToday={true}
@@ -906,7 +940,7 @@ export default function Home() {
                     {concursosManana.map(concurso => (
                       <ConcursoCard 
                         key={concurso.id} 
-                        concurso={concurso} 
+                        concurso={{ ...concurso, nivel: resolveLevel(concurso), schoolName: resolveSchoolName(concurso) }} 
                         onHide={() => handleHideCard(concurso.id)}
                         userLocation={userLocation}
                       />
@@ -925,7 +959,7 @@ export default function Home() {
                     {concursosFuturos.map(concurso => (
                       <ConcursoCard 
                         key={concurso.id} 
-                        concurso={concurso} 
+                        concurso={{ ...concurso, nivel: resolveLevel(concurso), schoolName: resolveSchoolName(concurso) }} 
                         onHide={() => handleHideCard(concurso.id)}
                         userLocation={userLocation}
                       />
@@ -944,7 +978,7 @@ export default function Home() {
                     {concursosPasadosRecientes.map(concurso => (
                       <ConcursoCard 
                         key={concurso.id} 
-                        concurso={concurso} 
+                        concurso={{ ...concurso, nivel: resolveLevel(concurso), schoolName: resolveSchoolName(concurso) }} 
                         onHide={() => handleHideCard(concurso.id)}
                         userLocation={userLocation}
                       />

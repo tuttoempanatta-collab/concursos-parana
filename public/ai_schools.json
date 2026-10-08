@@ -1,0 +1,1463 @@
+{
+  "updatedAt": "2026-10-08T02:32:04.085Z",
+  "totalSchools": 208,
+  "tecnicasCount": 17,
+  "schools": [
+    {
+      "name": "CENTRO DE ARTE \"Club Universitario\"",
+      "nivel": "No especificado",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Centro de Educación Física N° 34 \"Educando en Salud y en Movimiento\"",
+      "nivel": "Secundario",
+      "cue": "300-3448",
+      "city": "Seguí",
+      "contestsCount": 3
+    },
+    {
+      "name": "Centro de Educación Física N°26 Oro Verde",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Oro Verde",
+      "contestsCount": 4
+    },
+    {
+      "name": "COLEGIO N° 1 \"D. F. Sarmiento\"",
+      "nivel": "Secundario",
+      "cue": "300-1493",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "COLEGIO N°1 \"Domingo F. Sarmiento\"",
+      "nivel": "Secundario",
+      "cue": "300-1493-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Dirección Departamental de Escuelas de Paraná y Supervisión de Educación Física de Nivel Primario",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "E.E.A.T. \"Las Delicias\"",
+      "nivel": "Secundaria Técnica",
+      "cue": "3001929",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "E.E.A.T. Nº 40 \"Hipólito Yrigoyen\"",
+      "nivel": "Secundaria Técnica",
+      "cue": "300-1928",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "E.E.A.T. Nº 73 \"Alas Argentinas\"",
+      "nivel": "Secundaria Técnica",
+      "cue": "3000840",
+      "city": "Las Tunas",
+      "contestsCount": 3
+    },
+    {
+      "name": "E.E.T. Nº 1 \"Gral. Francisco Ramírez\"",
+      "nivel": "Secundaria Técnica",
+      "cue": "300-1482",
+      "city": "Paraná Ciudad",
+      "contestsCount": 12
+    },
+    {
+      "name": "E.E.T. Nº 100 \"Puerto Nuevo\"",
+      "nivel": "Secundaria Técnica",
+      "cue": "300-1778-00",
+      "city": "Paraná Ciudad",
+      "contestsCount": 2
+    },
+    {
+      "name": "E.E.T. Nº 139 \"De Producción Agroindustrial\"",
+      "nivel": "Secundaria Técnica",
+      "cue": "300-1678",
+      "city": "Viale",
+      "contestsCount": 7
+    },
+    {
+      "name": "E.E.T. Nº 18 \"Arq. Clorindo Testa\"",
+      "nivel": "Secundaria Técnica",
+      "cue": "300-3353",
+      "city": "San Benito",
+      "contestsCount": 3
+    },
+    {
+      "name": "E.E.T. Nº 2 \"Alte. Guillermo Brown\"",
+      "nivel": "Secundaria Técnica",
+      "cue": "300-1481-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 12
+    },
+    {
+      "name": "E.E.T. Nº 21 \"Libertador General Don José de San Martín\"",
+      "nivel": "Secundaria Técnica",
+      "cue": "300-1913",
+      "city": "Paraná Ciudad",
+      "contestsCount": 7
+    },
+    {
+      "name": "E.E.T. Nº 3 \"Enrique Carbó\"",
+      "nivel": "Secundaria Técnica",
+      "cue": "300-0497",
+      "city": "Paraná Ciudad",
+      "contestsCount": 16
+    },
+    {
+      "name": "E.E.T. Nº 3 \"Tte. Don Luis C. Candelaria\"",
+      "nivel": "Secundaria Técnica",
+      "cue": "3001773",
+      "city": "Paraná Ciudad",
+      "contestsCount": 3
+    },
+    {
+      "name": "E.E.T. Nº 34 \"General Enrique Mosconi\"",
+      "nivel": "Secundaria Técnica",
+      "cue": "300-1922-00",
+      "city": "María Grande",
+      "contestsCount": 3
+    },
+    {
+      "name": "E.E.T. Nº 4 \"Dr. Jorge Pedro Busti\"",
+      "nivel": "Secundaria Técnica",
+      "cue": "300-2306",
+      "city": "Paraná Ciudad",
+      "contestsCount": 8
+    },
+    {
+      "name": "E.E.T. Nº 5 \"Malvinas Argentinas\"",
+      "nivel": "Secundaria Técnica",
+      "cue": "300-1572",
+      "city": "Paraná Ciudad",
+      "contestsCount": 11
+    },
+    {
+      "name": "E.E.T. Nº 58 \"Dr Federico Hoenig \"",
+      "nivel": "Secundaria Técnica",
+      "cue": "3001809",
+      "city": "Hernandarias",
+      "contestsCount": 11
+    },
+    {
+      "name": "E.E.T. Nº 68 PROF",
+      "nivel": "Secundaria Técnica",
+      "cue": "300-1690-",
+      "city": "Seguí",
+      "contestsCount": 10
+    },
+    {
+      "name": "EPJA N 141 RAMON OTERO",
+      "nivel": "Primario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 2
+    },
+    {
+      "name": "EPJA N° 143 \"Manuel Pacifico Antequeda\"",
+      "nivel": "Secundario",
+      "cue": "300-1671",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "EPJA N°142 \"Leopoldo Herrera\"",
+      "nivel": "Secundario",
+      "cue": "3001777",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "EPJA N°149 \"Enrique Mosconi\"",
+      "nivel": "Secundario",
+      "cue": "3000782-",
+      "city": "Hasenkamp",
+      "contestsCount": 3
+    },
+    {
+      "name": "EPJA Nº97 \"La Cautiva\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Crespo",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela de Arte en Música de la Ciudad de Paraná",
+      "nivel": "Primario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela de Educación Integral N° 22 \"Juan Francisco Seguí\"",
+      "nivel": "Secundario",
+      "cue": "300-1684-",
+      "city": "Seguí",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela de Educación Integral N° 7 Edith Fitzgerald de la ciudad de Paraná y la Supervisión de Educación Especial Zona B, llaman a Concurso Público por Presentación de Proyectos Segundo llamado",
+      "nivel": "Primario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela de Educación Integral N° 7 Edith Fitzgerald\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela de Educación Integral N° 7 Edith Fitzgerald\" de la ciudad de Paraná",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela de Educación Integral N°21 \"Dra. Celia O. de Montoya\"",
+      "nivel": "Secundario",
+      "cue": "3001660",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela de Educación Integral N°21 \"Dra. Celia Ortiz de Montoya\"",
+      "nivel": "Secundario",
+      "cue": "3001660",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela de Educación Integral N°3 \"Carolina Tobar García\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela de Educación Integral N°5 \"Dr. Martín Ruiz Moreno\"",
+      "nivel": "Primario",
+      "cue": "3001825-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela E.E.A.T.\" Las Delicias\"",
+      "nivel": "Secundaria Técnica",
+      "cue": "3001929",
+      "city": "Paraná Ciudad",
+      "contestsCount": 6
+    },
+    {
+      "name": "Escuela Educación Integral N° 31 \"Portales De Amor\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Cerrito",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Integral N° 11 \"A. M. C. Cumar de Rico\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "María Grande",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESCUELA INTEGRAL N° 11 \"A. M. C. Cumar De Rico\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "María Grande",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESCUELA INTEGRAL N° 17 \"A. M. C. Cumar De Rico\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "María Grande",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESCUELA INTEGRAL N° 34 \"Flavia Mena\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESCUELA Jornada Extendida/NINA Escuela Primaria Nº 39 \" Perito Moreno\"",
+      "nivel": "Primario",
+      "cue": "3000684-",
+      "city": "Aldea Santa María",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESCUELA N°1 \"Dpto De Aplicación Alfredo Alfonsini\"",
+      "nivel": "Primario",
+      "cue": null,
+      "city": "Oro Verde",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela NINA Nº \"8 Juan Martín de Pueyrredón\"",
+      "nivel": "Primario",
+      "cue": "3000409",
+      "city": "Paraná Ciudad",
+      "contestsCount": 7
+    },
+    {
+      "name": "Escuela NINA Nº 102 \"Victoria De Chacabuco\"",
+      "nivel": "Primario",
+      "cue": "300-1676",
+      "city": "Viale",
+      "contestsCount": 6
+    },
+    {
+      "name": "Escuela Nina/Nep Primaria Nº 196 Marcelino Román,",
+      "nivel": "Primario",
+      "cue": "300-0721-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Normal Superior \"Victorino Viale\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Viale",
+      "contestsCount": 5
+    },
+    {
+      "name": "ESCUELA NORMAL SUPERIOR \"Victorino Viale\"",
+      "nivel": "Secundario",
+      "cue": "3001858",
+      "city": "Viale",
+      "contestsCount": 4
+    },
+    {
+      "name": "Escuela Normal Superior. \"Victorino Viale\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Viale",
+      "contestsCount": 2
+    },
+    {
+      "name": "ESCUELA PRIMARIA DE JÓVENES Y ADULTOS \"Hans Christian Andersen\"",
+      "nivel": "Secundario",
+      "cue": "300204600",
+      "city": "Viale",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria NINA /NEP Nº 133 \"Gregoria Pérez\"",
+      "nivel": "Primario",
+      "cue": "300-1811",
+      "city": "Paraná Ciudad",
+      "contestsCount": 4
+    },
+    {
+      "name": "ESCUELA PRIMARIA NINA N° 7 \"Mariano Moreno\"",
+      "nivel": "Primario",
+      "cue": "3001779-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 7
+    },
+    {
+      "name": "ESCUELA PRIMARIA NINA N° 88 BARTOLOMÉ MITRE",
+      "nivel": "Primario",
+      "cue": "3001918",
+      "city": "Paraná Ciudad",
+      "contestsCount": 10
+    },
+    {
+      "name": "Escuela Primaria NINA N°208 \"Int. J.C Esparza\"",
+      "nivel": "Primario",
+      "cue": "3002522",
+      "city": "Paraná Ciudad",
+      "contestsCount": 3
+    },
+    {
+      "name": "ESCUELA PRIMARIA NINA N°24 \"Maximio Victoria\"",
+      "nivel": "Primario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 3
+    },
+    {
+      "name": "ESCUELA PRIMARIA NINA Nº _120_ \"_república Dominicana\"",
+      "nivel": "Secundario",
+      "cue": "300",
+      "city": "El Pingo",
+      "contestsCount": 3
+    },
+    {
+      "name": "ESCUELA PRIMARIA NINA Nº -120- \"República Dominicana\"",
+      "nivel": "Primario",
+      "cue": "300-1926-",
+      "city": "El Pingo",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria NINA Nº 102 \"Victoria de Chacabuco\"",
+      "nivel": "Secundario",
+      "cue": "300-1676",
+      "city": "Viale",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESCUELA PRIMARIA NINA Nº 102 \"Victoria De Chacabuco\"",
+      "nivel": "Primario",
+      "cue": "300-1676",
+      "city": "Viale",
+      "contestsCount": 2
+    },
+    {
+      "name": "ESCUELA PRIMARIA NINA Nº 120 \" República Dominicana\"",
+      "nivel": "Primario",
+      "cue": "3001926",
+      "city": "El Pingo",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria NINA Nº 120 \"República Dominicana\"",
+      "nivel": "Primario",
+      "cue": null,
+      "city": "El Pingo",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESCUELA PRIMARIA NINA Nº 120_ \"_república Dominicana\"",
+      "nivel": "Secundario",
+      "cue": "300",
+      "city": "El Pingo",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESCUELA PRIMARIA NINA/NEP Nº 102 \"Victoria De Chacabuco\"",
+      "nivel": "Primario",
+      "cue": "300-1676",
+      "city": "Viale",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria Nº 105 \"Patria Libre\"",
+      "nivel": "Secundario",
+      "cue": "300-1759",
+      "city": "Crespo",
+      "contestsCount": 3
+    },
+    {
+      "name": "Escuela Primaria Nº 11 \"Provincia de Santa Fe\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Primaria Nº 114 \"Hans Christian Andersen\"",
+      "nivel": "Secundario",
+      "cue": "3002046",
+      "city": "Viale",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Primaria Nº 120 \"República Dominicana\"",
+      "nivel": "Primario",
+      "cue": "300-1926",
+      "city": "El Pingo",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria Nº 120 Rca",
+      "nivel": "Secundario",
+      "cue": "300-1926",
+      "city": "El Pingo",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria Nº 132 \"República de Chile\"",
+      "nivel": "Primario",
+      "cue": "300-1912",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria Nº 14 \"Williams Morris\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria Nº 141 \"Ramón Segundo Otero\"",
+      "nivel": "Secundario",
+      "cue": "300-1916",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria Nº 146 \"Bases\"",
+      "nivel": "Secundario",
+      "cue": "300-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 4
+    },
+    {
+      "name": "Escuela Primaria Nº 187 NINA.NEP \"Argentina Soberana\"",
+      "nivel": "Secundario",
+      "cue": "300-1763",
+      "city": "Crespo",
+      "contestsCount": 18
+    },
+    {
+      "name": "Escuela Primaria Nº 189 Luz Viera Méndez",
+      "nivel": "Primario",
+      "cue": "300-1020-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria Nº 190 Jornada Completa \"Ob. J.M. Gelabert y Crespo\"",
+      "nivel": "Primario",
+      "cue": null,
+      "city": "Crespo",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria Nº 195 NINA \"La Delfina\"",
+      "nivel": "Primario",
+      "cue": "300-1668-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 7
+    },
+    {
+      "name": "Escuela Primaria Nº 196 \"Marcelino Román\"",
+      "nivel": "Primario",
+      "cue": "300-0721",
+      "city": "Paraná Ciudad",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Primaria Nº 20 \"Casiano Calderón\"",
+      "nivel": "Secundario",
+      "cue": "300-1664",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria Nº 203 NINA \"Guaraní\"",
+      "nivel": "Secundario",
+      "cue": "300-1764",
+      "city": "Crespo",
+      "contestsCount": 10
+    },
+    {
+      "name": "Escuela Primaria Nº 204 \"Libertad\"",
+      "nivel": "Primario",
+      "cue": "300-1018",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria Nº 207 \"Evita\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "San Benito",
+      "contestsCount": 6
+    },
+    {
+      "name": "Escuela Primaria Nº 208 NINA \"Int. J. C. Esparza \"",
+      "nivel": "Secundario",
+      "cue": "300-2522-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria Nº 209 \"Pedro Natalio Varisco\"",
+      "nivel": "Primario",
+      "cue": "300-3029",
+      "city": "María Grande",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Primaria Nº 211 \"Félix Miguel Garcilaso\"",
+      "nivel": "Secundario",
+      "cue": "300-3149",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria Nº 26 Dr. \"Victoriano Montes\"",
+      "nivel": "Secundario",
+      "cue": "3001038-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria Nº 36 \"General Gregorio Aráoz de Lamadrid\"",
+      "nivel": "Primario",
+      "cue": "300-1727",
+      "city": "Villa Urquiza",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Primaria Nº 38 \"Mariano Necochea\"",
+      "nivel": "Secundario",
+      "cue": "300-1732",
+      "city": "Cerrito",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria Nº 4 \"Domingo Faustino Sarmiento\"",
+      "nivel": "Secundario",
+      "cue": "300-1378-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria Nº 6 \"Ernesto A. Bavio\"",
+      "nivel": "Secundario",
+      "cue": "3001919-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria Nº 60 \"Martin Miguel Guemes\"",
+      "nivel": "Primario",
+      "cue": "300-0886",
+      "city": "Viale",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria Nº 61 \"Facundo Zuviría\"",
+      "nivel": "Primario",
+      "cue": "300-0584",
+      "city": "Seguí",
+      "contestsCount": 5
+    },
+    {
+      "name": "Escuela Primaria Nº 69 \"Miguel De Azcuénaga\"",
+      "nivel": "Secundario",
+      "cue": "300-0786",
+      "city": "Pueblo Brugo",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Primaria Nº 96 \"José Manuel Estrada\"",
+      "nivel": "Secundario",
+      "cue": "300-1781",
+      "city": "Paraná Ciudad",
+      "contestsCount": 4
+    },
+    {
+      "name": "Escuela Secundaria",
+      "nivel": "Secundario",
+      "cue": "300-2866",
+      "city": "Paraná Ciudad",
+      "contestsCount": 3
+    },
+    {
+      "name": "Escuela Secundaria de Adultos con anexo Orientada",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Hernandarias",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Secundaria de Jóvenes y Adultos N°26 \"Dr. V. Montes\"",
+      "nivel": "Secundario",
+      "cue": "300-3259",
+      "city": "Paraná Ciudad",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Secundaria de Jóvenes y Adultos Nº 33 \"Dr. Alberto M. Nusimovich\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Crespo",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESCUELA SECUNDARIA DE LA BAXADA DEL PARANÁ",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Secundaria ESJA Nº 29 \"Dr. Esteban L. Maradona\"",
+      "nivel": "Secundario",
+      "cue": "300-0822",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESCUELA SECUNDARIA JÓVENES Y ADULTOS Nº 114 \"Julia Del Carril\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Viale",
+      "contestsCount": 3
+    },
+    {
+      "name": "Escuela Secundaria Nº 05 \"Brig. Gral. A. M. Zuloaga\"",
+      "nivel": "Secundario",
+      "cue": "300-2009",
+      "city": "San Benito",
+      "contestsCount": 3
+    },
+    {
+      "name": "Escuela Secundaria Nº 11 MARÍA E",
+      "nivel": "Secundario",
+      "cue": "3001688",
+      "city": "Aldea San Antonio",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Secundaria Nº 12 \"Provincia Del Neuquén\"",
+      "nivel": "Secundario",
+      "cue": "3001873",
+      "city": "Paraná Ciudad",
+      "contestsCount": 6
+    },
+    {
+      "name": "Escuela Secundaria Nº 13 \"Gobernador Ricardo López Jordán\"",
+      "nivel": "Secundario",
+      "cue": "3001957",
+      "city": "Paraná Ciudad",
+      "contestsCount": 4
+    },
+    {
+      "name": "Escuela Secundaria Nº 15 \"De la Baxada del Paraná\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 5
+    },
+    {
+      "name": "Escuela Secundaria Nº 16 \"Del Centenario\"",
+      "nivel": "Secundario",
+      "cue": "300-1500",
+      "city": "Paraná Ciudad",
+      "contestsCount": 15
+    },
+    {
+      "name": "Escuela Secundaria Nº 17 \"Poeta Juan L. Ortiz\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 6
+    },
+    {
+      "name": "Escuela Secundaria Nº 18 \"Brigadier General Don Juan Manuel De Rosas\"",
+      "nivel": "Secundario",
+      "cue": "300-1663",
+      "city": "Paraná Ciudad",
+      "contestsCount": 9
+    },
+    {
+      "name": "Escuela Secundaria Nº 19 \"Raúl Humberto Záccaro\"",
+      "nivel": "Secundario",
+      "cue": "3001751",
+      "city": "Paraná Ciudad",
+      "contestsCount": 7
+    },
+    {
+      "name": "Escuela Secundaria Nº 20 \"Rosario Vera Peñaloza\"",
+      "nivel": "Secundario",
+      "cue": "300",
+      "city": "Oro Verde",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Secundaria Nº 21 \"Arturo Jauretche\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Secundaria Nº 22 \"Raúl Scalabrini Ortiz\"",
+      "nivel": "Secundario",
+      "cue": "300-1564-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 7
+    },
+    {
+      "name": "Escuela Secundaria Nº 26 \"Olegario Victor Andrade\"",
+      "nivel": "Secundario",
+      "cue": "300-1963",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Secundaria Nº 26 \"Olegario Víctor Andrade\"",
+      "nivel": "Secundario",
+      "cue": "300-1963",
+      "city": "Paraná Ciudad",
+      "contestsCount": 5
+    },
+    {
+      "name": "Escuela Secundaria Nº 28 \"Ntra. Sra. De Guadalupe\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 3
+    },
+    {
+      "name": "Escuela Secundaria Nº 3 \"Mons. Dr. Abel Bazán y Bustos\"",
+      "nivel": "No especificado",
+      "cue": "300-1872",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Secundaria Nº 3 \"Monseñor Dr. Abel Bazán y Bustos\"",
+      "nivel": "Secundario",
+      "cue": "300-1872",
+      "city": "Paraná Ciudad",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Secundaria Nº 30 \"Jose Hernández\"",
+      "nivel": "Secundario",
+      "cue": "300-1939",
+      "city": "Colonia Avellaneda",
+      "contestsCount": 7
+    },
+    {
+      "name": "Escuela Secundaria Nº 32 Vice Comodoro Don \"J.J.R Falconier\"",
+      "nivel": "Primario",
+      "cue": "300-2801",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Secundaria Nº 35 \"Cesáreo Bernaldo de Quirós\"",
+      "nivel": "Secundario",
+      "cue": "300-1878",
+      "city": "Paraná Ciudad",
+      "contestsCount": 5
+    },
+    {
+      "name": "Escuela Secundaria Nº 36 \"Cap. Gral. Justo José de Urquiza\"",
+      "nivel": "Secundario",
+      "cue": "300-1747",
+      "city": "Paraná Ciudad",
+      "contestsCount": 12
+    },
+    {
+      "name": "Escuela Secundaria Nº 37 \"Manuel Belgrano\"",
+      "nivel": "Secundario",
+      "cue": "3001772",
+      "city": "Paraná Ciudad",
+      "contestsCount": 10
+    },
+    {
+      "name": "Escuela Secundaria Nº 37 MANUEL BELGRANO",
+      "nivel": "Secundario",
+      "cue": "3001772",
+      "city": "Paraná Ciudad",
+      "contestsCount": 3
+    },
+    {
+      "name": "Escuela Secundaria Nº 37, \"Manuel Belgrano\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Secundaria Nº 38 \"LICEO Paula A. de Sarmiento\"",
+      "nivel": "Secundario",
+      "cue": "300-1472-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 11
+    },
+    {
+      "name": "Escuela Secundaria Nº 41 \"Colegio Nacional de Cerrito\"",
+      "nivel": "Secundario",
+      "cue": "300-1734",
+      "city": "Cerrito",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Secundaria Nº 44 \"Enrique Berduc\"",
+      "nivel": "Secundario",
+      "cue": "3002890",
+      "city": "Paraná Ciudad",
+      "contestsCount": 9
+    },
+    {
+      "name": "Escuela Secundaria Nº 45 \"Carlos Brugo\"",
+      "nivel": "Secundario",
+      "cue": "300-2608-",
+      "city": "Pueblo Brugo",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Secundaria Nº 47 \"Eduardo Y Federico Hasenkamp\"",
+      "nivel": "Secundario",
+      "cue": "300-2684",
+      "city": "Hasenkamp",
+      "contestsCount": 4
+    },
+    {
+      "name": "Escuela Secundaria Nº 48 \"Congreso de Oriente\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Secundaria Nº 48 \"Congreso De Oriente\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 5
+    },
+    {
+      "name": "Escuela Secundaria Nº 49 \"Aldea Cuesta\"",
+      "nivel": "Secundario",
+      "cue": "300-2677",
+      "city": "Aldea San Rafael",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Secundaria Nº 5 \"Brig. Gral. A. M. Zuloaga\"",
+      "nivel": "Secundario",
+      "cue": "300-2009",
+      "city": "San Benito",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Secundaria Nº 50 \"República de Entre Ríos\"",
+      "nivel": "Secundario",
+      "cue": "300-2663",
+      "city": "Paraná Ciudad",
+      "contestsCount": 6
+    },
+    {
+      "name": "Escuela Secundaria Nº 51 \"Prof. Inés Greca\"",
+      "nivel": "Secundario",
+      "cue": "3002581",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Secundaria Nº 52 \"Gaucho Antonio Rivero\"",
+      "nivel": "Secundario",
+      "cue": "300-2616",
+      "city": "Paraná Ciudad",
+      "contestsCount": 4
+    },
+    {
+      "name": "Escuela Secundaria Nº 53 \"San Julián\"",
+      "nivel": "Secundario",
+      "cue": "3002696",
+      "city": "El Pingo",
+      "contestsCount": 5
+    },
+    {
+      "name": "Escuela Secundaria Nº 54 \"Jorge Luis Borges\"",
+      "nivel": "Secundario",
+      "cue": "300-2701",
+      "city": "Paraná Ciudad",
+      "contestsCount": 3
+    },
+    {
+      "name": "Escuela Secundaria Nº 55 \"Héroes de Malvinas\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "María Grande",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Secundaria Nº 57 \"Dr. Mariano Moreno\"",
+      "nivel": "Secundario",
+      "cue": "300-2866",
+      "city": "Paraná Ciudad",
+      "contestsCount": 3
+    },
+    {
+      "name": "Escuela Secundaria Nº 58 \"Poeta Carlos Mastronardi\"",
+      "nivel": "Secundario",
+      "cue": "300-2606",
+      "city": "Paraná Ciudad",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Secundaria Nº 6 \"Lomas del Mirador\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 4
+    },
+    {
+      "name": "Escuela Secundaria Nº 60 \"Bicentenario\"",
+      "nivel": "Secundario",
+      "cue": "300",
+      "city": "Crespo",
+      "contestsCount": 7
+    },
+    {
+      "name": "Escuela Secundaria Nº 62 \"Yapeyú\"",
+      "nivel": "Secundario",
+      "cue": "3002669",
+      "city": "Paso De La Arena",
+      "contestsCount": 3
+    },
+    {
+      "name": "Escuela Secundaria Nº 63 \"El Ramblón\"",
+      "nivel": "Secundario",
+      "cue": "300-2591",
+      "city": "El Ramblón",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Secundaria Nº 64 \"Antonio Tomás Sud\"",
+      "nivel": "Secundario",
+      "cue": "3002610",
+      "city": "Arroyo Corralito",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Secundaria Nº 67 \"Tabaré\"",
+      "nivel": "Secundario",
+      "cue": "300-2620",
+      "city": "Paraná Ciudad",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Secundaria Nº 69 \"Juan XXIII\"",
+      "nivel": "Secundario",
+      "cue": "300-2697",
+      "city": "Villa Fontana",
+      "contestsCount": 5
+    },
+    {
+      "name": "Escuela Secundaria Nº 7 \"Del Centenario De María Luisa\"",
+      "nivel": "Secundario",
+      "cue": "300-1933",
+      "city": "Aldea María Luisa",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Secundaria Nº 70 SENDEROS",
+      "nivel": "Secundario",
+      "cue": "300-2722",
+      "city": "Paraná Ciudad",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Secundaria Nº 73 \"El Palenque\"",
+      "nivel": "Secundario",
+      "cue": "3002602",
+      "city": "El Palenque",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Secundaria Nº 74 \"Profesor Walter Heinze\"",
+      "nivel": "Secundario",
+      "cue": "3002678-",
+      "city": "Crespo",
+      "contestsCount": 7
+    },
+    {
+      "name": "Escuela Secundaria Nº 74 Profesor Walter Heinze",
+      "nivel": "Secundario",
+      "cue": "300-",
+      "city": "Crespo",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Secundaria Nº 76",
+      "nivel": "Secundario",
+      "cue": "3002668",
+      "city": "Viale",
+      "contestsCount": 3
+    },
+    {
+      "name": "Escuela Secundaria Nº 76 \"Amalio Zapata Soñéz\"",
+      "nivel": "Secundario",
+      "cue": "300-2668-",
+      "city": "Viale",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Secundaria Nº 77 \"Evita\"",
+      "nivel": "Secundario",
+      "cue": "300-2709",
+      "city": "San Benito",
+      "contestsCount": 10
+    },
+    {
+      "name": "Escuela Secundaria Nº 78 \"Juan Carlos Esparza\"",
+      "nivel": "Secundario",
+      "cue": "300-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Secundaria Nº 8 \"Enrique Tabossi\"",
+      "nivel": "Secundario",
+      "cue": "300-1851",
+      "city": "Tabossi",
+      "contestsCount": 6
+    },
+    {
+      "name": "Escuela Secundaria Nº 82 \"Liga de los Pueblos Libres\"",
+      "nivel": "Secundario",
+      "cue": "300-3153",
+      "city": "Paraná Ciudad",
+      "contestsCount": 8
+    },
+    {
+      "name": "Escuela Secundaria Nº 83 \"Empleados De Comercio\"",
+      "nivel": "Secundario",
+      "cue": "300-3151",
+      "city": "Paraná Ciudad",
+      "contestsCount": 3
+    },
+    {
+      "name": "Escuela Secundaria Nº 85 \"José Gervasio Artigas\"",
+      "nivel": "Secundario",
+      "cue": "300-3213",
+      "city": "Colonia Avellaneda",
+      "contestsCount": 11
+    },
+    {
+      "name": "Escuela Secundaria Nº 87 \"Dr. René G. Favaloro\"",
+      "nivel": "Secundario",
+      "cue": "300",
+      "city": "Sauce Pinto",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Secundaria Nº 87 \"René Favaloro\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Sauce Pinto",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Secundaria Nº 88 \"Puerto Curtiembre\"",
+      "nivel": "Secundario",
+      "cue": "3003299-",
+      "city": "Puerto Curtiembre",
+      "contestsCount": 5
+    },
+    {
+      "name": "Escuela Secundaria Nº 90 \"Antonio Marichal\"",
+      "nivel": "Secundario",
+      "cue": "300-3361",
+      "city": "Colonia Nueva",
+      "contestsCount": 2
+    },
+    {
+      "name": "Escuela Secundaria Nro. 75 \"Del Bicentenario\"",
+      "nivel": "Secundario",
+      "cue": "300-2604-00",
+      "city": "Paraná Ciudad",
+      "contestsCount": 3
+    },
+    {
+      "name": "ESCUELA SECUNDARIA PARA JÓVENES Y ADULTOS N° 141 \"Ramón Otero\"",
+      "nivel": "Secundario",
+      "cue": "300-3260",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Escuela Secundaria y ESA N° 59 \"Toma Nueva\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESCUELA SECUNDARIA y ESA N° 59 \"Toma Nueva\"",
+      "nivel": "Secundario",
+      "cue": "3002686",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESCUELA: Centro de Formación Profesional Nº 7",
+      "nivel": "Primario",
+      "cue": "300-2305",
+      "city": "María Grande",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESJA Nº 1 \"Leandro N. Alem\"",
+      "nivel": "Secundario",
+      "cue": "300-0292",
+      "city": "Paraná Ciudad",
+      "contestsCount": 2
+    },
+    {
+      "name": "ESJA Nº 1 \"Leandro N. ALEM\"",
+      "nivel": "Secundario",
+      "cue": "300-0292",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESJA Nº 108 \"Alberto Williams\"",
+      "nivel": "Secundario",
+      "cue": "300-3267",
+      "city": "Hernandarias",
+      "contestsCount": 3
+    },
+    {
+      "name": "ESJA Nº 143 \"Manuel P. Antequeda\"",
+      "nivel": "Secundario",
+      "cue": "300-3262",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESJA Nº 156 \"Amado Bonpland\"",
+      "nivel": "Secundario",
+      "cue": "300-3265",
+      "city": "Paraná Ciudad",
+      "contestsCount": 4
+    },
+    {
+      "name": "ESJA Nº 2 \"José Martí\"",
+      "nivel": "Secundario",
+      "cue": "300-1563",
+      "city": "Paraná Ciudad",
+      "contestsCount": 2
+    },
+    {
+      "name": "ESJA Nº 23 \"Josefina Zubizarreta\"",
+      "nivel": "Secundario",
+      "cue": "3001503",
+      "city": "Paraná Ciudad",
+      "contestsCount": 3
+    },
+    {
+      "name": "ESJA Nº 25 \"A. Yupanqui\"",
+      "nivel": "Secundario",
+      "cue": "300-0576-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 3
+    },
+    {
+      "name": "ESJA Nº 29 DR. ESTEBAN LAUREANO MARADONA.",
+      "nivel": "Secundario",
+      "cue": "3000822",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESJA Nº 31 \"Pueblos Originarios\"",
+      "nivel": "Secundario",
+      "cue": "300-2536",
+      "city": "Colonia Avellaneda",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESJA Nº 32 Vice Comodoro Don \"J.J.R Falconier\"",
+      "nivel": "Primario",
+      "cue": "3002801-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESJA Nº 33 \"DR. ALBERTO M. NUSIMOVICH – CUE 3002799 – LOCALIDAD CRESPO. SOLICITUD DE PUBLICACIÓN Nº 6/2026 Fecha de pedido: 01/10/2026 La Rectoría de la Escuela Secundaria Jóvenes y Adultos Número 33 \"",
+      "nivel": "Secundario",
+      "cue": "3002799",
+      "city": "Crespo",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESJA Nº 4 \"P. M. Victoria\"",
+      "nivel": "Secundario",
+      "cue": "3001558-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESJA Nº 56 \" Lorenzo Miguel\"",
+      "nivel": "Secundario",
+      "cue": "3003026",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESJA Nº 56 \"Lorenzo Miguel\"",
+      "nivel": "Secundario",
+      "cue": "300-3026",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESJA Nº 79 \"Alberto Gerchunoff\"",
+      "nivel": "Secundario",
+      "cue": "300-3054",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESJA Nº 80 \"La Delfina\"",
+      "nivel": "Secundario",
+      "cue": "300-3137",
+      "city": "Seguí",
+      "contestsCount": 2
+    },
+    {
+      "name": "ESJA Nº 81 \"Profesor Fermín Chávez\"",
+      "nivel": "Primario",
+      "cue": "300-2996",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESJA Nº 84 \"El Estibador\"",
+      "nivel": "Secundario",
+      "cue": "3003178",
+      "city": "Villa Urquiza",
+      "contestsCount": 1
+    },
+    {
+      "name": "ESJA Nº 9 \"PTE. Arturo Illia\"",
+      "nivel": "Secundario",
+      "cue": "3001681",
+      "city": "Viale",
+      "contestsCount": 2
+    },
+    {
+      "name": "ESJA Nº 97 \"Prof. Isabel González\"",
+      "nivel": "Secundario",
+      "cue": "300-3266",
+      "city": "Crespo",
+      "contestsCount": 1
+    },
+    {
+      "name": "ete de Señas\"– Escuela Secundaria Nº 82 \"",
+      "nivel": "Secundario",
+      "cue": "300-3153-",
+      "city": "Paraná Ciudad",
+      "contestsCount": 2
+    },
+    {
+      "name": "Instituto de Educación Superior \"Maestro Rural Nasario Lapalma\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Hernandarias",
+      "contestsCount": 1
+    },
+    {
+      "name": "Instituto de Educación Superior \"Nasario Lapalma\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Hernandarias",
+      "contestsCount": 8
+    },
+    {
+      "name": "Instituto de Educación Superior \"Paraná\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Instituto de Educación Superior \"Pbro. O. Bottegal\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Hasenkamp",
+      "contestsCount": 1
+    },
+    {
+      "name": "Instituto de Educación Superior \"Pbro. Orlando Bottegal\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Hasenkamp",
+      "contestsCount": 4
+    },
+    {
+      "name": "Instituto de Educación Superior \"República de Entre Ríos\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "María Grande",
+      "contestsCount": 2
+    },
+    {
+      "name": "Instituto de Educación Superior de Paraná",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Instituto de Enseñanza Superior \"Maestro Rural Nasario Lapalma\"",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Hernandarias",
+      "contestsCount": 1
+    },
+    {
+      "name": "Instituto Técnico Superior de Cerrito",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Cerrito",
+      "contestsCount": 2
+    },
+    {
+      "name": "La Dirección de Educación Física del CGE, Dirección Departamental de Escuelas de Paraná y la Supervisión de Educación Física de Nivel Primario; llama a concurso",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 2
+    },
+    {
+      "name": "La Dirección de Educación Física del CGE, Dirección Departamental de Escuelas de Paraná, y la Supervisión de Educación Física; convoca a concurso",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "La Dirección de Educación Física del CGE, Dirección Departamental de Escuelas de Paraná, y la Supervisión de Educación Física; convocan a concurso por presentación de proyectos",
+      "nivel": "Secundario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "La Escuela de Educación Integral N° 7 Edith Fitzgerald de la ciudad de Paraná y la Supervisión de Educación Especial Zona B, llaman a Concurso Público por Presentación de Proyectos",
+      "nivel": "Primario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "Supervisión de Educación Especial Zona B y Escuela de Educación Integral N° 7 Edith Fitzgerald de la ciudad de Paraná",
+      "nivel": "Primario",
+      "cue": null,
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    },
+    {
+      "name": "TALLER LENGUA EXTRANJERA: inglés Supervisión de Nivel Primario Zona I Escuela Primaria Nº 166 Facundo Arce\"",
+      "nivel": "Secundario",
+      "cue": "300-0815",
+      "city": "Paraná Ciudad",
+      "contestsCount": 1
+    }
+  ]
+}
