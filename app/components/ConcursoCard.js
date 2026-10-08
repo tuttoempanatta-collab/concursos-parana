@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { differenceInSeconds, parseISO } from 'date-fns';
-import { Clock, CalendarDays, ExternalLink, MapPin, EyeOff, Map as MapIcon, Route } from 'lucide-react';
+import { Clock, CalendarDays, ExternalLink, MapPin, EyeOff, Map as MapIcon, Route, BookOpen } from 'lucide-react';
 
 // Haversine formula to calculate distance between two coordinates
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -20,6 +20,8 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 
 export default function ConcursoCard({ concurso, onHide, userLocation, isRecent, isNew, isToday, isExpired: forceExpired }) {
   const [timeLeft, setTimeLeft] = useState(null);
+  const [showAllPlazas, setShowAllPlazas] = useState(false);
+
   
   // Clean text function for fail-safe UI display
   const cleanText = (text) => {
@@ -123,6 +125,38 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
       setTimeout(() => setCopied(false), 2000);
     }
   };
+
+  // Resolve Plazas List with resilient fallback
+  const resolvedPlazas = (concurso.plazasList && concurso.plazasList.length > 0)
+    ? concurso.plazasList
+    : (() => {
+        if (!concurso.fullContent) return [];
+        const lines = concurso.fullContent.split('\n').map(l => l.trim()).filter(l => l.length > 5);
+        const list = [];
+        for (const l of lines) {
+          if (/(?:n[°º]?\s*(?:de\s*)?)?plazas?(?:\s*sage)?|p\s*:\s*\d+|p\.\s*:\s*\d+|\bpl\s*\d{4,8}\b/i.test(l)) {
+            const horasM = l.match(/(?:^|[^\d])(\d{1,2})\s*(?:hs|h|horas)\b/i);
+            const carM = l.match(/\b(STF|STV|SCV|TIT)\b/i);
+            const plazasM = l.match(/\b(\d{4,7})\b/g) || [];
+            let cleanM = l
+              .replace(/(?:n[°º]?\s*(?:de\s*)?)?plazas?(?:\s*sage)?|p\s*:\s*|p\.\s*:|\bpl\b/gi, '')
+              .replace(/\b\d{4,7}\b/g, '')
+              .replace(/\(?\d+\s*(?:hs|horas)\)?/gi, '')
+              .replace(/\b(?:STF|STV|SCV|TIT)\b/gi, '')
+              .replace(/^[•\-\*–—\s:;,\.\/]+|[•\-\*–—\s:;,\.\/]+$/g, '')
+              .slice(0, 45)
+              .trim();
+            list.push({
+              materia: cleanM.length > 2 ? cleanM : null,
+              horas: horasM ? parseInt(horasM[1], 10) : null,
+              caracter: carM ? carM[1].toUpperCase() : null,
+              plazas: plazasM.filter(n => parseInt(n, 10) > 1000 && !['2024','2025','2026'].includes(n))
+            });
+          }
+        }
+        return list;
+      })();
+
 
   // Replaced: if (!timeLeft) return null; 
   // We want to render the card even if timeLeft is null (e.g. no date)
@@ -278,6 +312,124 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
         </div>
       </div>
 
+      {/* Sección Destacada de Materias y Horas a Concursar */}
+      {(resolvedPlazas.length > 0 || concurso.materiasSummary || concurso.distinctSubject) && (
+        <div style={{
+          margin: '0.45rem 0',
+          background: 'rgba(255, 255, 255, 0.03)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '8px',
+          padding: '0.45rem 0.6rem'
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '0.35rem',
+            fontSize: '0.72rem'
+          }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700, color: '#38bdf8' }}>
+              <BookOpen size={13} />
+              Materias a Concursar {resolvedPlazas.length > 0 ? `(${resolvedPlazas.length} ${resolvedPlazas.length === 1 ? 'plaza' : 'plazas'})` : ''}
+            </span>
+            {(concurso.totalHoras > 0 || resolvedPlazas.some(p => p.horas)) && (
+              <span style={{
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                color: '#34d399',
+                background: 'rgba(52, 211, 153, 0.12)',
+                padding: '0.15rem 0.4rem',
+                borderRadius: '4px',
+                border: '1px solid rgba(52, 211, 153, 0.25)'
+              }}>
+                {concurso.totalHoras || resolvedPlazas.reduce((acc, p) => acc + (p.horas || 0), 0)} hs totales
+              </span>
+            )}
+          </div>
+
+          {resolvedPlazas.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {(showAllPlazas ? resolvedPlazas : resolvedPlazas.slice(0, 2)).map((p, idx) => (
+                <div key={idx} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  background: 'rgba(0, 0, 0, 0.25)',
+                  padding: '0.35rem 0.5rem',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(255, 255, 255, 0.04)',
+                  fontSize: '0.75rem',
+                  gap: '6px'
+                }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {p.materia || concurso.distinctSubject || 'Materia a concursar'}
+                    </div>
+                    <div style={{ fontSize: '0.65rem', color: '#94a3b8', display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '1px' }}>
+                      {p.plazas && p.plazas.length > 0 && <span>Plaza {p.plazas.join(', ')}</span>}
+                      {p.curso && <span>· {p.curso}</span>}
+                      {p.turno && <span>· {p.turno}</span>}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
+                    {p.horas && (
+                      <span style={{
+                        fontWeight: 700,
+                        color: '#38bdf8',
+                        background: 'rgba(56, 189, 248, 0.12)',
+                        padding: '0.15rem 0.35rem',
+                        borderRadius: '4px',
+                        border: '1px solid rgba(56, 189, 248, 0.25)',
+                        fontSize: '0.7rem'
+                      }}>
+                        {p.horas} hs
+                      </span>
+                    )}
+                    {p.caracter && (
+                      <span style={{
+                        fontWeight: 700,
+                        color: p.caracter === 'STF' ? '#38bdf8' : '#a855f7',
+                        background: p.caracter === 'STF' ? 'rgba(56, 189, 248, 0.12)' : 'rgba(168, 85, 247, 0.12)',
+                        padding: '0.15rem 0.35rem',
+                        borderRadius: '4px',
+                        fontSize: '0.65rem'
+                      }}>
+                        {p.caracter}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {resolvedPlazas.length > 2 && (
+                <button
+                  onClick={() => setShowAllPlazas(!showAllPlazas)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#93c5fd',
+                    fontSize: '0.68rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    padding: '0.2rem 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '2px'
+                  }}
+                >
+                  {showAllPlazas ? 'Mostrar menos' : `+ ${resolvedPlazas.length - 2} plazas más...`}
+                </button>
+              )}
+            </div>
+          ) : (
+            <div style={{ fontSize: '0.75rem', color: '#cbd5e1', fontWeight: 500 }}>
+              {concurso.materiasSummary || concurso.distinctSubject}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Full Content Toggle */}
       {concurso.fullContent && (
         <div style={{margin: '0.25rem 0'}}>
@@ -299,6 +451,34 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
             <div className="full-content-container" style={{
               marginTop: '0.75rem', position: 'relative'
             }}>
+              {resolvedPlazas.length > 0 && (
+                <div style={{ marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8', marginBottom: '2px' }}>
+                    Desglose de Plazas y Horarios ({resolvedPlazas.length}):
+                  </div>
+                  {resolvedPlazas.map((p, idx) => (
+                    <div key={idx} style={{
+                      background: 'rgba(255,255,255,0.04)',
+                      padding: '0.4rem 0.6rem',
+                      borderRadius: '6px',
+                      fontSize: '0.75rem',
+                      border: '1px solid rgba(255,255,255,0.06)'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: '#f8fafc' }}>
+                        <span>{p.materia || 'Materia a concursar'}</span>
+                        <span style={{ color: '#38bdf8' }}>{p.horas ? `${p.horas} hs` : ''} {p.caracter ? `(${p.caracter})` : ''}</span>
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '2px' }}>
+                        {p.plazas && p.plazas.length > 0 && <span>Plaza: {p.plazas.join(', ')} · </span>}
+                        {p.curso && <span>Curso: {p.curso} · </span>}
+                        {p.turno && <span>Turno: {p.turno} · </span>}
+                        {p.schedule && <span>Horario: {p.schedule}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div style={{
                 padding: '1rem', 
                 background: 'rgba(0,0,0,0.3)', borderRadius: '8px', 
@@ -309,6 +489,7 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
               }}>
                 {cleanText(concurso.fullContent)}
               </div>
+
               <button 
                 onClick={handleCopyText}
                 style={{

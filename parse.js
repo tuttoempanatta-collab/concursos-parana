@@ -384,12 +384,17 @@ async function fetchDetailedInfo(url, urlYear) {
             llamadosSummary: aiResult.llamadosSummary || null,
             llamados: aiResult.llamados || [],
             caracteres: aiResult.caracteres || [],
-            caracterSummary: aiResult.caracterSummary || null
+            caracterSummary: aiResult.caracterSummary || null,
+            plazasList: aiResult.plazasList || [],
+            materiasSummary: aiResult.materiasSummary || null,
+            totalHoras: aiResult.totalHoras || 0,
+            plazasCount: aiResult.plazasCount || 0
         };
     } catch (e) {
         console.error(`  Failed to fetch details from ${url}: ${e.message}`);
-        return { subjects: [], plazas: [], specificDate: null, fullTextContent: '', isOld: false, needsReview: false, distinctSubject: null, primaryLlamado: null, llamadosSummary: null, llamados: [], caracteres: [], caracterSummary: null };
+        return { subjects: [], plazas: [], specificDate: null, fullTextContent: '', isOld: false, needsReview: false, distinctSubject: null, primaryLlamado: null, llamadosSummary: null, llamados: [], caracteres: [], caracterSummary: null, plazasList: [], materiasSummary: null, totalHoras: 0, plazasCount: 0 };
     }
+
 }
 
 let globalDeepScrapeCount = 0;
@@ -471,7 +476,12 @@ async function scrapeCGEPage(url) {
                     llamados: details.llamados || [],
                     caracteres: details.caracteres || [],
                     caracterSummary: details.caracterSummary || null,
+                    plazasList: details.plazasList || [],
+                    materiasSummary: details.materiasSummary || null,
+                    totalHoras: details.totalHoras || 0,
+                    plazasCount: details.plazasCount || 0,
                     link: href,
+
                     nivel: level !== 'No especificado' ? level : (details.specificDate ? classifyLevel(details.fullTextContent) || level : level),
                     date: (details.specificDate || date)?.toISOString() || null,
                     pubDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(now),

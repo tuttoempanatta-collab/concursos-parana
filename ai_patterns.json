@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "lastUpdated": "2026-10-06T05:45:00.000Z",
+  "version": 3,
+  "lastUpdated": "2026-10-07T19:18:00.000Z",
   "caracteres": {
     "STF": {
       "codigo": "STF",
@@ -31,6 +31,47 @@
       "badgeBg": "rgba(16, 185, 129, 0.15)"
     }
   },
+  "plazaPrefixPatterns": [
+    {
+      "id": "nro_de_plaza",
+      "regex": "(?:n[°º]?\\s*(?:de\\s*)?)?plazas?(?:\\s*sage)?",
+      "description": "N° de Plaza, N° de plazas, Plaza SAGE, Plazas Sage"
+    },
+    {
+      "id": "p_colon",
+      "regex": "p\\s*:\\s*|p\\.\\s*:\\s*",
+      "description": "P: 247592, P.: 247592"
+    },
+    {
+      "id": "pl_short",
+      "regex": "\\bpl\\s*\\d{4,7}\\b",
+      "description": "PL 12144"
+    },
+    {
+      "id": "plaza_sage_nro",
+      "regex": "plazas?\\s*sage\\s*[-–—:]?\\s*(?:n[°º]?[-–—:]?)?\\s*\\d+",
+      "description": "Plazas Sage – N°- 248919"
+    },
+    {
+      "id": "plaza_colon",
+      "regex": "plaza\\s*:\\s*\\d+",
+      "description": "PLAZA: 820537"
+    }
+  ],
+  "learnedPlazaPrefixes": [],
+  "hoursPatterns": [
+    {
+      "id": "num_hs_space",
+      "regex": "(?:^|[^\\d])(\\d{1,2})\\s*(?:hs|h|horas|hs\\.)(?=[;\\.,\\s–—\\-]|$)",
+      "description": "4 HS, 3 hs., 01 HS, 6 horas"
+    },
+    {
+      "id": "parenthesis_hs",
+      "regex": "\\((\\d{1,2})\\s*hs\\)",
+      "description": "(2hs), (3hs)"
+    }
+  ],
+
   "eventPhrases": [
     {
       "id": "se_llevara_a_cabo",

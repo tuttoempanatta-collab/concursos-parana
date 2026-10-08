@@ -51,6 +51,26 @@ function saveLearnedPattern(newPhrase) {
     }
 }
 
+function saveLearnedPlazaPattern(newPrefix) {
+    if (!newPrefix || newPrefix.length < 2 || newPrefix.length > 50) return;
+    try {
+        const patterns = loadPatterns();
+        if (!patterns.learnedPlazaPrefixes) patterns.learnedPlazaPrefixes = [];
+        const exists = patterns.learnedPlazaPrefixes.some(p => (p.prefix || p).toLowerCase() === newPrefix.toLowerCase());
+        if (!exists) {
+            patterns.learnedPlazaPrefixes.push({
+                prefix: newPrefix,
+                learnedAt: new Date().toISOString()
+            });
+            fs.writeFileSync(PATTERNS_PATH, JSON.stringify(patterns, null, 2));
+            console.log(`[AI ENGINE] [APRENDIZAJE] ¡Nueva variante de número de plaza aprendida!: "${newPrefix}"`);
+        }
+    } catch (e) {
+        console.warn('[AI ENGINE] No se pudo guardar variante de plaza aprendida:', e.message);
+    }
+}
+
+
 const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
 function addBusinessDays(startDate, days) {
@@ -246,8 +266,232 @@ function extractCaracteres(text) {
 }
 
 /**
+ * Parses an individual plaza or subject line with comprehensive pattern recognition
+ */
+function parsePlazaLine(line) {
+    if (!line || line.length < 5) return null;
+
+    // Filter out standard administrative / introductory text
+    if (/^(?:la rector[ií]a|la direcci[oó]n|el equipo|en todos los|los interesados|toda necesidad|los cargos liberados|lista de cargos|solicitud de|convocatoria a)/i.test(line)) {
+        return null;
+    }
+
+    // 1. Identify plaza or teaching job line
+    const isPlazaLine = /(?:(?:n[°º]?\s*(?:de\s*)?)?plazas?(?:\s*sage)?(?:\s*[:\-\.º°n]*|\b)|p\s*:\s*\d+|p\.\s*:\s*\d+|\bpl\s*\d{4,8}\b|\bp\s+\d{4,8}\b)/i.test(line);
+    const hasJobStructure = isPlazaLine || /(?:^|[–—•\*\s])(\d{1,2})\s*(?:hs|horas)\b(?!\s*[:\.]\s*\d)/i.test(line) || /cargo\s*(?:de|“|")/i.test(line);
+    if (!isPlazaLine && !hasJobStructure) return null;
+
+    // Dynamic learning: check if new plaza prefix appears
+    const unknownPrefixMatch = line.match(/^([a-zA-Z\s]{2,15}\s*[:\-–—]?\s*\d{4,7})/i);
+    if (unknownPrefixMatch && !isPlazaLine) {
+        const candidatePrefix = unknownPrefixMatch[1].replace(/\d+.*$/, '').trim();
+        if (candidatePrefix.length > 2 && candidatePrefix.length < 25) {
+            saveLearnedPlazaPattern(candidatePrefix);
+        }
+    }
+
+    let working = line.trim();
+
+    // 2. Extract and strip schedule / días / horarios from the end
+    let schedule = null;
+    const schedMatch = working.match(/(?:(?:\(|–|-|\.)\s*)?(?:d[ií]as?|horarios?|d[ií]a|los\s*d[ií]as)\s*[:–—\-]?\s*([^$\n\r]+)$/i) ||
+                       working.match(/(?:(?:\(|–|-|\.)\s*)?(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado)\s+(?:de\s+)?\d{1,2}[:\.]\d{2}[^$\n\r]*$/i) ||
+                       working.match(/\((?:lun|mar|mi[eé]|jue|vie)[^)]+\)/i);
+    if (schedMatch) {
+        schedule = schedMatch[0].replace(/^[\s–—:;\.,\-\(]+|[\s–—:;\.,\-\)]+$/g, '');
+        working = working.replace(schedMatch[0], '').trim();
+    }
+
+    // 3. Extract character (STF, STV, SCV, TIT)
+    let caracter = null;
+    if (/\bSTF\b|s\.t\.f\./i.test(working)) caracter = 'STF';
+    else if (/\bSTV\b|s\.t\.v\./i.test(working)) caracter = 'STV';
+    else if (/\bSCV\b|s\.c\.v\./i.test(working)) caracter = 'SCV';
+    else if (/\bTIT\b|titular/i.test(working)) caracter = 'TIT';
+    working = working.replace(/\b(?:s\.?t\.?f\.?|s\.?t\.?v\.?|s\.?c\.?v\.?|tit|titular)\b/gi, ' ');
+
+    // 4. Extract Turno
+    let turno = null;
+    const turnoMatch = working.match(/\b(T\.?M\.?|T\.?T\.?|T\.?N\.?|T\.?R\.?|Turno\s*Mañana|Turno\s*Tarde|Turno\s*Noche|Turno\s*Rotativo)\b/i);
+    if (turnoMatch) {
+        turno = turnoMatch[1].toUpperCase().replace(/\./g, '').replace('TURNO ', 'T.');
+        working = working.replace(turnoMatch[0], ' ');
+    }
+
+    // 5. Extract Course / Div / Ciclo (avoiding 'categoría' or words starting with a-g)
+    let curso = null;
+    const cursoMatch = working.match(/\b(\d+[°ºª]\s*(?:año|divisi[oó]n)?(?:\s*["“”']?[a-gA-G0-9ªº°]{1,2}["“”']?)?|\d+to\s*\d+ra|\d+ro\s*[a-gA-G]|\d+er\s*año|\d+to\s*año|\d+º\s*\d+ª|\d+°\s*divisi[oó]n)\b(?!\s*categor[ií]a)/i);
+    if (cursoMatch && !cursoMatch[0].toLowerCase().includes('categor')) {
+        curso = cursoMatch[0].trim();
+        working = working.replace(cursoMatch[0], ' ');
+    }
+    // Clean division letters like "- B" or "B;" left behind by course
+    working = working.replace(/(?:^|\s)[–—\-]\s*[a-gA-G]\b/gi, ' ');
+
+    // Clean school tracks (only when explicit modality, avoiding 'orientación pedagógica/psicológica')
+    working = working.replace(/\b(?:c\.?b\.?c\.?|ciclo\s*b[aá]sico|ciclo\s*superior|especialidad\s*[a-z]+|c\.?o\.?|modalidad\s*[^–—;\.]+|(?:con\s+)?orientaci[oó]n\s+en\s+ciencias[^–—;\.]*)\b/gi, ' ');
+    working = working.replace(/\bESJA\b/gi, ' ');
+
+    // 6. Extract Plaza numbers (SAGE plaza codes are 4 to 7 digits)
+    let plazaNumbers = [];
+    const plazaNumRegex = /\b(\d{4,7})\b/g;
+
+    // Isolate the plaza section up to the first occurrence of hours, materia, or course
+    const plazaPrefixMatch = working.match(/^(?:[•\-\*–—\s]*)(?:(?:n[°º]?\s*(?:de\s*)?)?plazas?(?:\s*sage)?|p\s*:|p\.\s*:|pl\b|plazas?\b)[^a-zA-Z\n\r]*?(\d{4,7}(?:[^\w\n\r]*\d{4,7})*)/i);
+    if (plazaPrefixMatch) {
+        let m;
+        while ((m = plazaNumRegex.exec(plazaPrefixMatch[0])) !== null) {
+            const num = parseInt(m[1], 10);
+            if (num > 1000 && num !== 2024 && num !== 2025 && num !== 2026) {
+                plazaNumbers.push(m[1]);
+            }
+        }
+        working = working.replace(plazaPrefixMatch[0], ' ');
+    }
+    // Also capture any remaining isolated plaza codes (4-7 digits) before hours or materia
+    working = working.replace(/(?:(?:n[°º]?\s*(?:de\s*)?)?plazas?(?:\s*sage)?|p\s*:|p\.\s*:|pl\b)(?:[^\d\n\r]*\d{4,7})*/gi, (match) => {
+        let m;
+        while ((m = plazaNumRegex.exec(match)) !== null) {
+            const num = parseInt(m[1], 10);
+            if (num > 1000 && num !== 2024 && num !== 2025 && num !== 2026 && !plazaNumbers.includes(m[1])) {
+                plazaNumbers.push(m[1]);
+            }
+        }
+        return ' ';
+    });
+
+    // 7. Extract Hours (1-40 hs / horas / h)
+    let horas = null;
+    const horasMatch = working.match(/(?:^|[^\d])(\d{1,2})\s*(?:hs|h|horas|hs\.)(?=[;\.,\s–—\-]|$)/i) ||
+                       working.match(/\((\d{1,2})\s*hs\)/i);
+    if (horasMatch) {
+        const parsedH = parseInt(horasMatch[1], 10);
+        if (parsedH > 0 && parsedH <= 45) {
+            horas = parsedH;
+            working = working.replace(horasMatch[0], ' ');
+        }
+    }
+
+    // 8. Clean leftover text to get pure Materia / Cargo
+    let cleanMat = working
+        .replace(/^[•\-\*–—\s:;,\.\/]+|[•\-\*–—\s:;,\.\/]+$/g, '')
+        .replace(/^(?:de\s+|en\s+|para\s+|del\s+)/i, '')
+        .replace(/\b(?:hs|horas|h)\b/gi, ' ')
+        .replace(/[“"”']/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    // Strip trailing prepositions, division letters, or grade numbers
+    cleanMat = cleanMat.replace(/\s*(?:en|de|del|para|con)\s*$/i, '');
+    cleanMat = cleanMat.replace(/;\s*\d+[°ºª].*$/i, '');
+    cleanMat = cleanMat.replace(/\s*[-–—]\s*[a-zA-Z]$/, '');
+    cleanMat = cleanMat.replace(/^[-–—:;\.,\s]+|[-–—:;\.,\s]+$/g, '').trim();
+
+    return {
+        raw: line.trim(),
+        plazas: plazaNumbers,
+        horas,
+        materia: cleanMat.length > 2 ? cleanMat : null,
+        caracter,
+        curso,
+        turno,
+        schedule
+    };
+}
+
+/**
+ * Extracts and consolidates all plazas, materias, and hours from contest content
+ */
+function extractPlazasAndMaterias(cleanText, title = '') {
+    const plazas = [];
+    if (!cleanText) {
+        return { plazas, materiasSummary: null, totalHoras: 0, plazasCount: 0 };
+    }
+
+    const lines = cleanText.split('\n').map(l => l.trim()).filter(l => l.length > 5);
+
+    for (const line of lines) {
+        const item = parsePlazaLine(line);
+        if (item && (item.materia || item.horas || item.plazas.length > 0)) {
+            plazas.push(item);
+        }
+    }
+
+    // Fallback: If no explicit plaza line was detected, check for direct cargo in text/title
+    if (plazas.length === 0) {
+        const cargoMatch = cleanText.match(/Cargo\s*(?:de\s*)?[“"']?([^”"'\n\r–—;]{3,50})[”"']?/i) ||
+                           title.match(/Cargos?\s*de\s*([^–—\(\)\n\r]{3,40})/i);
+        if (cargoMatch) {
+            const cleanCargo = cargoMatch[1].trim();
+            if (!/^(?:la|el|los|un|una)\b/i.test(cleanCargo)) {
+                plazas.push({
+                    raw: cargoMatch[0],
+                    plazas: [],
+                    horas: null,
+                    materia: `Cargo: ${cleanCargo}`,
+                    caracter: null,
+                    curso: null,
+                    turno: null,
+                    schedule: null
+                });
+            }
+        }
+    }
+
+    // Calculate total teaching hours
+    let totalHoras = 0;
+    plazas.forEach(p => {
+        if (p.horas && typeof p.horas === 'number') {
+            totalHoras += p.horas;
+        }
+    });
+
+    // Generate concise summary for card front
+    let materiasSummary = null;
+    if (plazas.length > 0) {
+        const uniqueSubjects = [];
+        const seen = new Set();
+        for (const p of plazas) {
+            const mName = p.materia || 'Cargo a concursar';
+            const key = mName.toLowerCase();
+            if (!seen.has(key)) {
+                seen.add(key);
+                uniqueSubjects.push({
+                    name: mName,
+                    horas: p.horas,
+                    caracter: p.caracter
+                });
+            } else {
+                const existing = uniqueSubjects.find(s => s.name.toLowerCase() === key);
+                if (existing && p.horas) {
+                    existing.horas = (existing.horas || 0) + p.horas;
+                }
+            }
+        }
+
+        if (uniqueSubjects.length === 1) {
+            const s = uniqueSubjects[0];
+            materiasSummary = `${s.name}${s.horas ? ` (${s.horas} hs)` : ''}${s.caracter ? ` · ${s.caracter}` : ''}`;
+        } else if (uniqueSubjects.length <= 3) {
+            materiasSummary = uniqueSubjects.map(s => `${s.name}${s.horas ? ` (${s.horas} hs)` : ''}`).join(' · ');
+        } else {
+            const firstTwo = uniqueSubjects.slice(0, 2).map(s => `${s.name}${s.horas ? ` (${s.horas} hs)` : ''}`).join(' · ');
+            materiasSummary = `${firstTwo} +${uniqueSubjects.length - 2} más`;
+        }
+    }
+
+    return {
+        plazas,
+        materiasSummary,
+        totalHoras,
+        plazasCount: plazas.length
+    };
+}
+
+/**
  * Extracts realistic contest event time (between 07:00 and 22:30), excluding class hours
  */
+
 function extractValidContestTime(cleanText) {
     if (!cleanText) return null;
 
@@ -532,6 +776,9 @@ async function analyzeConcurso(content, title, urlYear = 2026) {
     // 5. Extract job character designations (STF, STV, SCV)
     const caracterData = extractCaracteres(clean);
 
+    // 6. Extract plazas, materias, and teaching hours
+    const plazasData = extractPlazasAndMaterias(clean, title);
+
     return {
         date: finalDate,
         llamados,
@@ -539,6 +786,10 @@ async function analyzeConcurso(content, title, urlYear = 2026) {
         llamadosSummary,
         caracteres: caracterData.caracteres,
         caracterSummary: caracterData.caracterSummary,
+        plazasList: plazasData.plazas,
+        materiasSummary: plazasData.materiasSummary,
+        totalHoras: plazasData.totalHoras,
+        plazasCount: plazasData.plazasCount,
         confidence,
         needsReview: !finalDate
     };
@@ -548,6 +799,10 @@ module.exports = {
     analyzeConcurso,
     loadPatterns,
     saveLearnedPattern,
+    saveLearnedPlazaPattern,
     extractMultiLlamados,
-    extractCaracteres
+    extractCaracteres,
+    extractPlazasAndMaterias,
+    parsePlazaLine
 };
+
