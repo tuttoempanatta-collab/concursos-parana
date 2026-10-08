@@ -10,7 +10,9 @@
   --color-inicial: #f43f5e; /* Rose */
   --color-primario: #3b82f6; /* Blue */
   --color-secundario: #10b981; /* Emerald */
+  --color-secundaria-tecnica: #f59e0b; /* Amber */
   --color-superior: #8b5cf6; /* Violet */
+  --color-otro: #64748b; /* Slate */
   
   --shadow-glow: 0 0 20px rgba(255, 255, 255, 0.05);
 }

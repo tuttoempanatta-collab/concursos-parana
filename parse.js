@@ -4,9 +4,30 @@ const path = require('path');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const { getSlugId } = require('./utils/idUtils');
-const { analyzeConcurso } = require('./aiConcursoEngine');
+const { 
+    instructRobotForPublishing, 
+    extractSchoolName, 
+    classifyLevel, 
+    extractDeclaredDate,
+    analyzeConcurso 
+} = require('./aiConcursoEngine');
+const { checkAdminCredentialMatch } = require('./adminCredentials');
 
 const IS_LOCAL_ONLY = process.argv.includes('--local-only');
+
+// In-memory cache of previously parsed contests to preserve detectedAt and history
+const existingMap = new Map();
+try {
+    if (fs.existsSync('parsed_data.json')) {
+        const rawExisting = JSON.parse(fs.readFileSync('parsed_data.json', 'utf8'));
+        for (const item of rawExisting) {
+            if (item.id) existingMap.set(item.id, item);
+        }
+        console.log(`[ROBOT] Cargados ${existingMap.size} concursos previos de parsed_data.json.`);
+    }
+} catch (e) {
+    console.warn('[ROBOT] No se pudo leer parsed_data.json previo:', e.message);
+}
 
 // Initialize Firebase Admin
 let db = null;
@@ -317,7 +338,7 @@ function classifyCity(title) {
     return 'Paraná (Dpto)';
 }
 
-async function fetchDetailedInfo(url, urlYear) {
+async function fetchDetailedInfo(url, urlYear, title = '') {
     try {
         console.log(`  Fetching details from ${url}...`);
         const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 20000 });
@@ -338,21 +359,24 @@ async function fetchDetailedInfo(url, urlYear) {
         const plazas = [];
         let solicitud = null;
 
-        // 1. AI CONTINUOUS LEARNING & MULTI-LLAMADO ENGINE
-        const aiResult = await analyzeConcurso(cleanContent, url, urlYear);
-        const specificDate = aiResult.date || null;
-        const needsReview = aiResult.needsReview || false;
+        // 1. AI CONTINUOUS LEARNING & COGNITIVE DIRECTIVES FOR ROBOT
+        const aiInstruct = await instructRobotForPublishing(cleanContent, title || url, urlYear);
+        const specificDate = aiInstruct.date || null;
+        const needsReview = aiInstruct.needsReview || false;
 
         // 2. EXTRACT DISTINCT SUBJECT / WORKSHOP
         let distinctSubject = extractDistinctSubject(cleanContent);
-        if (!distinctSubject && aiResult.llamados?.length > 0 && aiResult.llamados[0].materia) {
-            distinctSubject = aiResult.llamados[0].materia;
+        if (!distinctSubject && aiInstruct.llamados?.length > 0 && aiInstruct.llamados[0].materia) {
+            distinctSubject = aiInstruct.llamados[0].materia;
         }
         if (distinctSubject) {
             console.log(`    [DISTINCT] Found subject: ${distinctSubject}`);
         }
-        if (aiResult.primaryLlamado) {
-            console.log(`    [AI LLAMADO] ${aiResult.primaryLlamado}`);
+        if (aiInstruct.primaryLlamado) {
+            console.log(`    [AI LLAMADO] ${aiInstruct.primaryLlamado}`);
+        }
+        if (aiInstruct.isAdminMatch) {
+            console.log(`    [ADMIN MATCH] ⭐ ${aiInstruct.adminMatchedSubject}`);
         }
 
         // 3. EXTRACT PLAZAS / MATERIAS / SOLICITUD
@@ -367,7 +391,7 @@ async function fetchDetailedInfo(url, urlYear) {
                               /\d+\s*hs/i.test(lowerLine);
             if (isJobInfo) {
                 const level = classifyLevel(line);
-                if (level === 'Secundario') subjects.push(line); else plazas.push(line);
+                if (level === 'Secundario' || level === 'Secundaria Técnica') subjects.push(line); else plazas.push(line);
             }
         }
 
@@ -380,21 +404,32 @@ async function fetchDetailedInfo(url, urlYear) {
             isOld: false, 
             needsReview,
             distinctSubject,
-            primaryLlamado: aiResult.primaryLlamado || null,
-            llamadosSummary: aiResult.llamadosSummary || null,
-            llamados: aiResult.llamados || [],
-            caracteres: aiResult.caracteres || [],
-            caracterSummary: aiResult.caracterSummary || null,
-            plazasList: aiResult.plazasList || [],
-            materiasSummary: aiResult.materiasSummary || null,
-            totalHoras: aiResult.totalHoras || 0,
-            plazasCount: aiResult.plazasCount || 0
+            schoolName: aiInstruct.schoolName,
+            nivel: aiInstruct.nivel,
+            declaredDate: aiInstruct.declaredDate,
+            isAdminMatch: aiInstruct.isAdminMatch,
+            adminMatchedSubject: aiInstruct.adminMatchedSubject,
+            publishingDirectives: aiInstruct.publishingDirectives,
+            primaryLlamado: aiInstruct.primaryLlamado || null,
+            llamadosSummary: aiInstruct.llamadosSummary || null,
+            llamados: aiInstruct.llamados || [],
+            caracteres: aiInstruct.caracteres || [],
+            caracterSummary: aiInstruct.caracterSummary || null,
+            plazasList: aiInstruct.plazasList || [],
+            materiasSummary: aiInstruct.materiasSummary || null,
+            totalHoras: aiInstruct.totalHoras || 0,
+            plazasCount: aiInstruct.plazasCount || 0
         };
     } catch (e) {
         console.error(`  Failed to fetch details from ${url}: ${e.message}`);
-        return { subjects: [], plazas: [], specificDate: null, fullTextContent: '', isOld: false, needsReview: false, distinctSubject: null, primaryLlamado: null, llamadosSummary: null, llamados: [], caracteres: [], caracterSummary: null, plazasList: [], materiasSummary: null, totalHoras: 0, plazasCount: 0 };
+        return { 
+            subjects: [], plazas: [], specificDate: null, fullTextContent: '', isOld: false, needsReview: false, 
+            distinctSubject: null, schoolName: 'Escuela Departamental', nivel: 'No especificado', declaredDate: null,
+            isAdminMatch: false, adminMatchedSubject: null, publishingDirectives: null,
+            primaryLlamado: null, llamadosSummary: null, llamados: [], caracteres: [], caracterSummary: null, 
+            plazasList: [], materiasSummary: null, totalHoras: 0, plazasCount: 0 
+        };
     }
-
 }
 
 let globalDeepScrapeCount = 0;
@@ -442,6 +477,7 @@ async function scrapeCGEPage(url) {
 
         console.log(`- Found ${links.length} recent potential links on ${url}`);
         const now = new Date();
+        const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(now);
         
         links.forEach((l, idx) => { l.cgeOrder = idx; });
 
@@ -458,7 +494,7 @@ async function scrapeCGEPage(url) {
             
             if (globalDeepScrapeCount < 80) {
                 globalDeepScrapeCount++;
-                const details = await fetchDetailedInfo(href, urlYear);
+                const details = await fetchDetailedInfo(href, urlYear, text);
                 const docId = getSlugId(href);
                 
                 // Refine title ONLY if distinctSubject is concise and not already present
@@ -467,9 +503,32 @@ async function scrapeCGEPage(url) {
                     finalTitle = `${text} (${details.distinctSubject})`;
                 }
 
+                // Check historical tracking / detection timestamp
+                const existing = existingMap.get(docId);
+                let detectedAt;
+                let isTardio;
+
+                if (existing && existing.detectedAt) {
+                    // Do not alter timestamp or status of already tracked contest
+                    detectedAt = existing.detectedAt;
+                    isTardio = existing.isTardio ?? false;
+                } else {
+                    // First time detected by the robot
+                    detectedAt = now.toISOString();
+                    const declared = details.declaredDate;
+                    const eventDate = details.specificDate || date;
+                    const isEventActive = !eventDate || new Date(eventDate) >= new Date(todayStr + 'T00:00:00Z');
+                    if (declared && declared < todayStr && isEventActive) {
+                        isTardio = true;
+                    } else {
+                        isTardio = false;
+                    }
+                }
+
                 results.push({
                     id: docId,
                     title: finalTitle,
+                    schoolName: details.schoolName || extractSchoolName(text, details.fullTextContent),
                     distinctSubject: details.distinctSubject || null,
                     primaryLlamado: details.primaryLlamado || null,
                     llamadosSummary: details.llamadosSummary || null,
@@ -482,9 +541,15 @@ async function scrapeCGEPage(url) {
                     plazasCount: details.plazasCount || 0,
                     link: href,
 
-                    nivel: level !== 'No especificado' ? level : (details.specificDate ? classifyLevel(details.fullTextContent) || level : level),
+                    nivel: details.nivel || level,
                     date: (details.specificDate || date)?.toISOString() || null,
-                    pubDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(now),
+                    pubDate: details.declaredDate || (existing && existing.pubDate) || todayStr,
+                    declaredDate: details.declaredDate || null,
+                    detectedAt: detectedAt,
+                    isTardio: isTardio,
+                    isAdminMatch: details.isAdminMatch || false,
+                    adminMatchedSubject: details.adminMatchedSubject || null,
+                    publishingDirectives: details.publishingDirectives || null,
                     department: city,
                     originalText: text,
                     materias: details.subjects,
@@ -604,6 +669,10 @@ async function syncToFirestore(concursos, unclassified = []) {
 
             if (snap.exists) {
                 delete c.pubDate;
+                if (snap.data().detectedAt) {
+                    delete c.detectedAt;
+                    delete c.isTardio;
+                }
             }
             
             batch.set(docRef, { ...c, isManual: false, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });

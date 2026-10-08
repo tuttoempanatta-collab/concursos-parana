@@ -5,7 +5,7 @@ import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import ConcursoCard from './components/ConcursoCard';
 import PresenceManager from './components/PresenceManager';
-import { RefreshCw, Search, Heart, X, Users, Activity } from 'lucide-react';
+import { RefreshCw, Search, Heart, X, Users, Activity, ExternalLink, Bell, Star } from 'lucide-react';
 
 import { db } from '../firebase.config';
 import { collection, getDocs, query, orderBy, doc, getDoc, setDoc, updateDoc, increment, onSnapshot } from 'firebase/firestore';
@@ -25,9 +25,14 @@ export default function Home() {
     Inicial: true,
     Primario: true,
     Secundario: true,
+    'Secundaria Técnica': true,
     Superior: true,
     Otro: true
   });
+  const [selectedSchool, setSelectedSchool] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [onlyAdminMatches, setOnlyAdminMatches] = useState(false);
+  const [showAdminDrawer, setShowAdminDrawer] = useState(false);
 
   // User Location State
   const [userLocation, setUserLocation] = useState(null);
@@ -427,12 +432,42 @@ export default function Home() {
   const startOfDayAfter = new Date(startOfToday.getTime() + 172800000);
   const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(now);
 
+  const uniqueSchools = Array.from(new Set(
+    concursos
+      .map(c => c.schoolName)
+      .filter(Boolean)
+      .filter(s => s !== 'Escuela Departamental' && s.length > 3)
+  )).sort();
+
+  const uniqueCities = Array.from(new Set(
+    concursos
+      .map(c => (c.department || '').replace('(Dpto)', '').trim())
+      .filter(Boolean)
+  )).sort();
+
+  const adminMatchesList = concursos.filter(c => c.isAdminMatch);
+
   const filteredConcursos = concursos.filter(c => {
+    // 1. Level filter
     const levelMatch = activeFilters[c.nivel] || (c.nivel === 'No especificado' && activeFilters['Otro']);
+    
+    // 2. School filter
+    const schoolMatch = !selectedSchool || c.schoolName === selectedSchool;
+
+    // 3. City filter
+    const cCity = (c.department || '').replace('(Dpto)', '').trim();
+    const cityMatch = !selectedCity || cCity.toLowerCase() === selectedCity.toLowerCase();
+
+    // 4. Admin match filter
+    const adminMatch = !onlyAdminMatches || c.isAdminMatch;
+
+    // 5. Search query
     const searchMatch = searchQuery === '' || 
       (c.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (c.schoolName || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
       (c.department || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.primaryLlamado || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.materiasSummary || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.distinctSubject || '').toLowerCase().includes(searchQuery.toLowerCase());
       
     const docDate = c.date ? new Date(c.date) : null;
@@ -444,7 +479,7 @@ export default function Home() {
     const isPast = docDate && docDate < now;
     const hideMatch = !(hideInactive && isPast) && !hiddenCardIds.includes(c.id);
       
-    return levelMatch && searchMatch && hideMatch;
+    return levelMatch && schoolMatch && cityMatch && adminMatch && searchMatch && hideMatch;
   });
 
   const isNovedad = (c) => {
@@ -544,12 +579,37 @@ export default function Home() {
               );
             })()}
           </div>
-          <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end'}}>
             {/* Real-time Presence Badge */}
             <div className="live-badge" title="Usuarios mirando el sitio ahora mismo">
               <div className="live-dot"></div>
               <span>{liveCount} EN VIVO</span>
             </div>
+
+            {/* Admin Contests Drawer Button */}
+            {adminMatchesList.length > 0 && (
+              <button 
+                onClick={() => setShowAdminDrawer(true)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.12)', 
+                  border: '1.5px solid #ffffff',
+                  color: '#ffffff', 
+                  padding: '0.25rem 0.65rem', 
+                  borderRadius: '6px', 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.4rem',
+                  fontSize: '0.75rem', 
+                  fontWeight: 800,
+                  boxShadow: '0 0 14px rgba(255, 255, 255, 0.4)'
+                }}
+                title="Avisos de Concursos para el Administrador (Colombo Francisco)"
+              >
+                <Star size={14} fill="#ffffff" color="#ffffff" />
+                Avisos Admin ({adminMatchesList.length})
+              </button>
+            )}
             
             <button 
               onClick={() => setShowDonate(true)}
@@ -624,24 +684,123 @@ export default function Home() {
           </div>
           
           <div className="filter-group">
-            {Object.keys(activeFilters).map(level => (
+            {Object.keys(activeFilters).map(level => {
+              const count = concursos.filter(c => {
+                if (level === 'Otro') return c.nivel === 'Otro' || c.nivel === 'No especificado';
+                return c.nivel === level;
+              }).length;
+              const color = level === 'Secundaria Técnica' 
+                ? 'var(--color-secundaria-tecnica)' 
+                : level === 'Otro'
+                  ? 'var(--color-otro)'
+                  : `var(--color-${level.toLowerCase()})`;
+
+              return (
+                <button
+                  key={level}
+                  onClick={() => toggleFilter(level)}
+                  className={`filter-btn ${activeFilters[level] ? 'active' : ''}`}
+                >
+                  <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+                    <span 
+                      className="level-indicator" 
+                      style={{backgroundColor: color}}
+                    ></span>
+                    {level}
+                  </div>
+                  <span style={{fontSize: '0.875rem', color: 'var(--text-muted)'}}>
+                    ({count})
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Quick toggle for only Admin Matches */}
+          {adminMatchesList.length > 0 && (
+            <div style={{marginTop: '1.25rem'}}>
               <button
-                key={level}
-                onClick={() => toggleFilter(level)}
-                className={`filter-btn ${activeFilters[level] ? 'active' : ''}`}
+                onClick={() => setOnlyAdminMatches(!onlyAdminMatches)}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 0.8rem',
+                  borderRadius: '8px',
+                  border: onlyAdminMatches ? '1.5px solid #ffffff' : '1px solid rgba(255,255,255,0.2)',
+                  background: onlyAdminMatches ? '#ffffff' : 'rgba(255, 255, 255, 0.05)',
+                  color: onlyAdminMatches ? '#0f172a' : '#ffffff',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: onlyAdminMatches ? '0 0 15px rgba(255,255,255,0.5)' : 'none',
+                  transition: 'all 0.2s ease'
+                }}
               >
-                <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
-                  <span 
-                    className="level-indicator" 
-                    style={{backgroundColor: `var(--color-${level.toLowerCase()})`}}
-                  ></span>
-                  {level}
-                </div>
-                <span style={{fontSize: '0.875rem', color: 'var(--text-muted)'}}>
-                  ({concursos.filter(c => c.nivel === level).length})
-                </span>
+                <span>🌟</span>
+                <span>{onlyAdminMatches ? 'Mostrando solo Admin' : `Solo Concursos Admin (${adminMatchesList.length})`}</span>
               </button>
-            ))}
+            </div>
+          )}
+
+          {/* Dropdown Filtro por Escuela */}
+          <div style={{marginTop: '1.25rem'}}>
+            <label style={{fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.4rem'}}>
+              🏫 Filtrar por Escuela
+            </label>
+            <select
+              value={selectedSchool}
+              onChange={(e) => setSelectedSchool(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.6rem 0.8rem',
+                borderRadius: '8px',
+                border: '1px solid var(--border-light)',
+                background: '#1e293b',
+                color: 'var(--text-main)',
+                outline: 'none',
+                fontSize: '0.82rem',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="">Todas las Escuelas ({uniqueSchools.length})</option>
+              {uniqueSchools.map(sch => (
+                <option key={sch} value={sch}>
+                  {sch}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Dropdown Filtro por Ciudad */}
+          <div style={{marginTop: '1rem'}}>
+            <label style={{fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.4rem'}}>
+              📍 Filtrar por Ciudad / Localidad
+            </label>
+            <select
+              value={selectedCity}
+              onChange={(e) => setSelectedCity(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.6rem 0.8rem',
+                borderRadius: '8px',
+                border: '1px solid var(--border-light)',
+                background: '#1e293b',
+                color: 'var(--text-main)',
+                outline: 'none',
+                fontSize: '0.82rem',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="">Todas las Ciudades ({uniqueCities.length})</option>
+              {uniqueCities.map(city => (
+                <option key={city} value={city}>
+                  {city}
+                </option>
+              ))}
+            </select>
           </div>
 
           
@@ -844,6 +1003,109 @@ export default function Home() {
               style={{width: '100%', marginTop: '1.5rem', padding: '1rem'}}
             >
               Entendido ❤️
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Avisos para el Administrador */}
+      {showAdminDrawer && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
+          display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100,
+          padding: '1rem'
+        }}>
+          <div className="glass-panel" style={{
+            maxWidth: '650px', width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column',
+            padding: '1.75rem', borderRadius: '24px', position: 'relative',
+            border: '1.5px solid #ffffff', boxShadow: '0 0 35px rgba(255, 255, 255, 0.25)'
+          }}>
+            <button 
+              onClick={() => setShowAdminDrawer(false)}
+              style={{position: 'absolute', top: '1.25rem', right: '1.25rem', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer'}}
+            >
+              <X size={24} />
+            </button>
+
+            <div style={{display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem'}}>
+              <div style={{background: '#ffffff', width: '42px', height: '42px', borderRadius: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+                <span style={{fontSize: '1.5rem'}}>🌟</span>
+              </div>
+              <div>
+                <h2 style={{margin: 0, color: '#ffffff', fontSize: '1.25rem'}}>Avisos para el Administrador</h2>
+                <p style={{margin: 0, fontSize: '0.75rem', color: '#94a3b8'}}>
+                  Docente: COLOMBO, FRANCISCO JUAN GUILLERMO (DNI: 34581536)
+                </p>
+              </div>
+            </div>
+
+            <div style={{marginBottom: '0.75rem', fontSize: '0.8rem', color: '#cbd5e1', background: 'rgba(255,255,255,0.06)', padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)'}}>
+              Se encontraron <strong>{adminMatchesList.length} concursos</strong> vigentes compatibles con tus títulos y habilitaciones docentes oficiales (TIC, Computación, Preceptor, Taller STE, Dibujo Técnico, Bromatología, Educación Tecnológica).
+            </div>
+
+            <div style={{overflowY: 'auto', flex: 1, paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
+              {adminMatchesList.length === 0 ? (
+                <p style={{color: '#94a3b8', textAlign: 'center', padding: '2rem 0'}}>No hay concursos activos para el administrador en este momento.</p>
+              ) : (
+                adminMatchesList.map(item => (
+                  <div key={item.id} style={{
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '12px',
+                    padding: '0.85rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px'
+                  }}>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px'}}>
+                      <span style={{background: '#ffffff', color: '#0f172a', fontWeight: 800, fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: '4px'}}>
+                        {item.adminMatchedSubject || 'Perfil Administrador'}
+                      </span>
+                      <span style={{fontSize: '0.72rem', color: '#38bdf8', fontWeight: 600}}>
+                        {item.department?.replace('(Dpto)', '').trim()}
+                      </span>
+                    </div>
+                    <div style={{fontWeight: 700, fontSize: '0.88rem', color: '#f8fafc'}}>
+                      {item.schoolName || item.title}
+                    </div>
+                    {item.materiasSummary && (
+                      <div style={{fontSize: '0.78rem', color: '#34d399'}}>
+                        📖 {item.materiasSummary}
+                      </div>
+                    )}
+                    {item.primaryLlamado && (
+                      <div style={{fontSize: '0.75rem', color: '#fbbf24'}}>
+                        ⏰ {item.primaryLlamado}
+                      </div>
+                    )}
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px'}}>
+                      <span style={{fontSize: '0.7rem', color: '#94a3b8'}}>
+                        {item.date ? new Date(item.date).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Fecha a confirmar'} hs
+                      </span>
+                      <a 
+                        href={item.link} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        style={{
+                          fontSize: '0.75rem', color: '#ffffff', textDecoration: 'none', background: 'rgba(255,255,255,0.15)',
+                          padding: '0.25rem 0.6rem', borderRadius: '6px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px'
+                        }}
+                      >
+                        Ver en CGE <ExternalLink size={12} />
+                      </a>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <button 
+              onClick={() => setShowAdminDrawer(false)}
+              className="btn-primary"
+              style={{marginTop: '1.25rem', padding: '0.75rem', background: '#ffffff', color: '#0f172a', fontWeight: 800}}
+            >
+              Cerrar Avisos
             </button>
           </div>
         </div>

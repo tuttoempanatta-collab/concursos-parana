@@ -795,8 +795,158 @@ async function analyzeConcurso(content, title, urlYear = 2026) {
     };
 }
 
+/**
+ * Extracts school name cleanly from title or beginning of content
+ */
+function extractSchoolName(title, content = '') {
+    const cleanStr = (s) => s ? s.trim()
+        .replace(/^desconvoca(?:toria)?\s*(?:parcialmente\s*)?(?:de|del)?\s*/i, '')
+        .replace(/^(?:por\s+)?(?:presentaci[oó]n\s*de\s*)?proyectos?\s*(?:de\s*)?/i, '')
+        .replace(/\s*[-–—:]*\s*\b(?:cue|localidad)\b.*$/i, '')
+        .replace(/^[-–—\s:\.]+|[-–—\s:\.]+$/g, '')
+        .trim() : '';
+
+    const schoolRegexQuoted = /(?:E\.?E\.?T\.?|E\.?E\.?A\.?T\.?|Escuela\s*Secundaria|Escuela\s*Nina|Escuela\s*Primaria|Escuela|Esc\.\s*Sec\.?|Esc\.\s*N[roº°\.]*|Esc\.|E\.?S\.?J\.?A\.?|Colegio|Liceo|Centro\s*de\s*(?:Arte|Educaci[oó]n\s*F[ií]sica))[^–—\(\)]*?[“"'][^”"']+?[”"']/i;
+    const schoolRegexUnquoted = /(?:E\.?E\.?T\.?|E\.?E\.?A\.?T\.?|Escuela\s*Secundaria|Escuela\s*Nina|Escuela\s*Primaria|Esc\.\s*Sec\.?|E\.?S\.?J\.?A\.?|Colegio|Liceo)\s*(?:N[°ºo\.]*\s*\d+)?\s+([A-Za-zÁÉÍÓÚÑa-z\s]{3,35})(?=\s*[-–—\(\)\.,]|\s*\bCUE\b|\s*\bLocalidad\b|$)/i;
+
+    // 1. Check title
+    if (title) {
+        const qm = title.match(schoolRegexQuoted);
+        if (qm) return cleanStr(qm[0]);
+        const uqm = title.match(schoolRegexUnquoted);
+        if (uqm) return cleanStr(uqm[0]);
+    }
+
+    // 2. Check content (first 600 chars)
+    if (content) {
+        const topContent = content.slice(0, 600);
+        const qm = topContent.match(schoolRegexQuoted);
+        if (qm) return cleanStr(qm[0]);
+        const uqm = topContent.match(schoolRegexUnquoted);
+        if (uqm) return cleanStr(uqm[0]);
+    }
+
+    // 3. Clean fallback from title
+    let fallback = (title || '')
+        .replace(/^(?:dptal\.?\s*pn[aá]\.?|dde\s*parana)\s*[-–—:\.]*\s*/i, '')
+        .replace(/(?:primer|1°|1º|1er|segundo|2°|2º|2do|tercer|3°)\s*llamado\s*(?:a\s*concurso)?\s*[-–—:\.]*\s*/i, '')
+        .replace(/llamado\s*a\s*concursos?\s*[-–—:\.]*\s*/i, '')
+        .replace(/convoca(?:\s*a\s*concurso)?\s*[-–—:\.]*\s*/i, '')
+        .replace(/desconvoca(?:toria)?\s*(?:parcialmente\s*)?(?:llamado\s*a\s*concurso)?\s*[-–—:\.]*\s*/i, '')
+        .replace(/horas\s*c[aá]tedras?\s*[-–—:\.]*\s*/i, '')
+        .split(/–|-|\(/)[0]
+        .trim();
+
+    return fallback.length > 5 ? fallback : 'Escuela Departamental';
+}
+
+/**
+ * Classifies educational level with explicit priority for Technical Secondary (EET / EEAT)
+ */
+function classifyLevel(title, content = '') {
+    const text = `${title || ''} ${(content || '').slice(0, 300)}`.toLowerCase();
+
+    // 1. Technical Secondary Schools (EET, EEAT, Técnica, Agrotécnica)
+    if (
+        /\be\.?e\.?t\.?\b/i.test(text) ||
+        /\be\.?e\.?a\.?t\.?\b/i.test(text) ||
+        /t[eé]cnica/i.test(text) ||
+        /agrot[eé]cnica/i.test(text) ||
+        /\be\.?t\.?\s*n[°º]?/i.test(text)
+    ) {
+        return 'Secundaria Técnica';
+    }
+
+    // 2. Regular Secondary Schools
+    if (
+        text.includes('secundari') || text.includes('sec.') || text.includes('sec ') || 
+        text.includes('esja') || text.includes('e.s.j.a') || text.includes('orientada') || 
+        text.includes('liceo') || text.includes('colegio')
+    ) {
+        return 'Secundario';
+    }
+
+    // 3. Primary Schools
+    if (
+        text.includes('primari') || text.includes('nep') || text.includes('nina') || 
+        text.includes('integral') || text.includes('especial') || 
+        /esc(?:uela|\.?)\s*(?:n[ro|º|°\.? ]*)?\d+/i.test(text)
+    ) {
+        return 'Primario';
+    }
+
+    if (text.includes('inicial') || text.includes('jardin') || text.includes('jardín')) return 'Inicial';
+    if (text.includes('superior') || text.includes('isdf') || text.includes('instituto') || text.includes('profesorado')) return 'Superior';
+
+    return 'No especificado';
+}
+
+/**
+ * Extracts declared publication date written by the school/CGE in content
+ */
+function extractDeclaredDate(cleanContent) {
+    if (!cleanContent) return null;
+    const topSlice = cleanContent.slice(0, 300);
+    const dateMatch = topSlice.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
+    if (dateMatch) {
+        const d = dateMatch[1].padStart(2, '0');
+        const m = dateMatch[2].padStart(2, '0');
+        const y = dateMatch[3];
+        return `${y}-${m}-${d}`;
+    }
+    return null;
+}
+
+const { checkAdminCredentialMatch } = require('./adminCredentials');
+
+/**
+ * AI Cognitive Instruction Pipeline for the Robot:
+ * Deeply inspects the contest, teaches the robot publishing directives,
+ * matches administrator credentials, and classifies levels and schools.
+ */
+async function instructRobotForPublishing(cleanContent, title, urlYear = 2026) {
+    const aiAnalysis = await analyzeConcurso(cleanContent, title, urlYear);
+    const schoolName = extractSchoolName(title, cleanContent);
+    const nivel = classifyLevel(title, cleanContent);
+    const declaredDate = extractDeclaredDate(cleanContent);
+
+    // Check administrator credentials match
+    const candidateItem = {
+        title,
+        plazasList: aiAnalysis.plazasList,
+        materiasSummary: aiAnalysis.materiasSummary,
+        distinctSubject: aiAnalysis.distinctSubject || null,
+        fullContent: cleanContent
+    };
+    const adminMatch = checkAdminCredentialMatch(candidateItem);
+
+    return {
+        ...aiAnalysis,
+        schoolName,
+        nivel,
+        declaredDate,
+        isAdminMatch: adminMatch.isMatch,
+        adminMatchedSubject: adminMatch.matchedSubject,
+        publishingDirectives: {
+            schoolName,
+            nivel,
+            declaredDate,
+            isAdminMatch: adminMatch.isMatch,
+            adminMatchedSubject: adminMatch.matchedSubject,
+            materiasSummary: aiAnalysis.materiasSummary,
+            totalHoras: aiAnalysis.totalHoras,
+            primaryLlamado: aiAnalysis.primaryLlamado,
+            caracterSummary: aiAnalysis.caracterSummary
+        }
+    };
+}
+
 module.exports = {
     analyzeConcurso,
+    instructRobotForPublishing,
+    extractSchoolName,
+    classifyLevel,
+    extractDeclaredDate,
     loadPatterns,
     saveLearnedPattern,
     saveLearnedPlazaPattern,

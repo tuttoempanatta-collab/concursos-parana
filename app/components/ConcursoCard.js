@@ -84,11 +84,17 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
   const isExpired = forceExpired || false; 
 
   // Dynamic Theme Logic according to business rules:
-  // 1. Recientes / Novedades: Pink (#f472b6)
-  // 2. Pasados (< 2 semanas): Green (#10b981) - Visible, no dimming
-  // 3. Activos: Today (Cyan #38bdf8 / Emerald #34d399), Future (Color primario)
+  // 1. Admin Credential Match: White (#ffffff) with halo glow
+  // 2. Carga Tardía: Yellow (#facc15)
+  // 3. Recientes / Novedades: Pink (#f472b6)
+  // 4. Activos: Today (Cyan #38bdf8), Recent (Orange #fb923c), Future (var(--color-primario))
+  // 5. Pasados (< 2 semanas): Green (#10b981) - Visible, no dimming
   let themeColor = '#10b981'; // Green default for past (< 2 weeks)
-  if (isNew) {
+  if (concurso.isAdminMatch) {
+    themeColor = '#ffffff'; // White for Admin matches
+  } else if (concurso.isTardio) {
+    themeColor = '#facc15'; // Yellow for Late uploads
+  } else if (isNew) {
     themeColor = '#f472b6'; // Pink
   } else if (!isPast) {
     if (isToday) themeColor = '#38bdf8'; // Cyan
@@ -99,6 +105,24 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
   }
   
   const isActive = !isPast;
+
+  const cardBorderColor = concurso.isAdminMatch 
+    ? '#ffffff' 
+    : concurso.isTardio 
+      ? '#facc15' 
+      : `${themeColor}44`;
+
+  const cardBoxShadow = concurso.isAdminMatch
+    ? '0 0 25px rgba(255, 255, 255, 0.4), inset 0 0 0 1.5px #ffffff'
+    : concurso.isTardio
+      ? '0 10px 30px -10px rgba(250, 204, 21, 0.45), inset 0 0 0 1.5px rgba(250, 204, 21, 0.5)'
+      : `0 10px 30px -10px ${themeColor}44, inset 0 0 0 1px ${themeColor}33`;
+
+  const cardBackground = concurso.isAdminMatch
+    ? 'rgba(255, 255, 255, 0.05)'
+    : concurso.isTardio
+      ? 'rgba(250, 204, 21, 0.03)'
+      : undefined;
 
   // Resolve Caracteres (STF / STV / SCV) with resilient fallback
   const resolvedCaracteres = (concurso.caracteres && concurso.caracteres.length > 0)
@@ -157,9 +181,6 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
         return list;
       })();
 
-
-  // Replaced: if (!timeLeft) return null; 
-  // We want to render the card even if timeLeft is null (e.g. no date)
 
   // Function to build a search query for Nominatim
   const getNominationQuery = () => {
@@ -233,16 +254,67 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
       className={`glass-panel concurso-card ${forceExpired ? 'expired' : ''}`} 
       data-level={concurso.nivel}
       style={{
-        boxShadow: `0 10px 30px -10px ${themeColor}44, inset 0 0 0 1px ${themeColor}33`,
-        borderColor: `${themeColor}44`
+        boxShadow: cardBoxShadow,
+        borderColor: cardBorderColor,
+        background: cardBackground
       }}
     >
       {/* Decorative top bar */}
-      <div className="concurso-level-bar" style={{background: themeColor}}></div>
+      <div 
+        className="concurso-level-bar" 
+        style={{
+          background: concurso.isAdminMatch 
+            ? 'linear-gradient(90deg, #ffffff, #94a3b8, #ffffff)' 
+            : themeColor,
+          boxShadow: concurso.isAdminMatch ? '0 0 10px #ffffff' : undefined
+        }}
+      ></div>
 
       <div className="card-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
         <div style={{display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap'}}>
-          <span className="level-badge">{concurso.nivel}</span>
+          {/* Admin Match Badge */}
+          {concurso.isAdminMatch && (
+            <span 
+              className="level-badge" 
+              style={{
+                background: '#ffffff',
+                color: '#0f172a',
+                fontWeight: 900,
+                border: '1px solid #ffffff',
+                boxShadow: '0 0 12px rgba(255, 255, 255, 0.7)',
+                letterSpacing: '0.04em'
+              }}
+            >
+              🌟 CONCURSO PARA EL ADMINISTRADOR {concurso.adminMatchedSubject ? `(${concurso.adminMatchedSubject})` : ''}
+            </span>
+          )}
+
+          {/* Late Upload Badge */}
+          {concurso.isTardio && !concurso.isAdminMatch && (
+            <span 
+              className="level-badge" 
+              style={{
+                background: 'rgba(250, 204, 21, 0.2)',
+                color: '#facc15',
+                border: '1px solid rgba(250, 204, 21, 0.6)',
+                fontWeight: 800,
+                letterSpacing: '0.03em'
+              }}
+            >
+              ⚠️ CARGA TARDÍA (Detectado Hoy)
+            </span>
+          )}
+
+          <span 
+            className="level-badge"
+            style={{
+              background: concurso.nivel === 'Secundaria Técnica' ? 'rgba(245, 158, 11, 0.2)' : undefined,
+              color: concurso.nivel === 'Secundaria Técnica' ? '#f59e0b' : undefined,
+              borderColor: concurso.nivel === 'Secundaria Técnica' ? 'rgba(245, 158, 11, 0.4)' : undefined
+            }}
+          >
+            {concurso.nivel}
+          </span>
           {isNew && <span className="level-badge" style={{background: 'rgba(244, 114, 182, 0.2)', color: '#f472b6', border: '1px solid rgba(244, 114, 182, 0.3)', fontWeight: 700}}>NOVEDAD</span>}
           {isRecent && isActive && <span className="level-badge" style={{background: 'rgba(251, 146, 60, 0.2)', color: '#fb923c', border: '1px solid rgba(251, 146, 60, 0.3)', fontWeight: 700}}>RECIENTE</span>}
           {isPast && !forceExpired && <span className="level-badge" style={{background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)', fontWeight: 700}}>REALIZADO</span>}
@@ -291,10 +363,26 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
         </button>
       </div>
 
+      {/* School Name Label */}
+      {concurso.schoolName && (
+        <div style={{
+          fontSize: '0.82rem',
+          fontWeight: 700,
+          color: concurso.isAdminMatch ? '#ffffff' : '#38bdf8',
+          margin: '0.35rem 0 0.15rem 0',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '5px'
+        }}>
+          <span>🏫</span>
+          <span>{concurso.schoolName}</span>
+        </div>
+      )}
+
       <h3 className="card-title" style={{
         fontSize: '1rem', 
         lineHeight: 1.3, 
-        margin: '0.25rem 0 0.5rem 0',
+        margin: '0.2rem 0 0.5rem 0',
         color: '#f1f5f9',
         fontWeight: 600
       }}>
@@ -310,6 +398,12 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
         <div className="detail-row" title="Departamento" style={{ gap: '4px' }}>
            <MapPin size={14} style={{ flexShrink: 0 }} /> <span>{concurso.department?.replace('(Dpto)', '').trim()}</span>
         </div>
+        {concurso.detectedAt && (
+          <div className="detail-row" title="Fecha y hora en que el robot detectó la publicación en la web" style={{ gap: '4px', color: '#94a3b8' }}>
+            <Clock size={14} style={{ flexShrink: 0 }} />
+            <span>Detectado: {new Date(concurso.detectedAt).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} hs</span>
+          </div>
+        )}
       </div>
 
       {/* Sección Destacada de Materias y Horas a Concursar */}
