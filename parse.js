@@ -409,6 +409,8 @@ async function fetchDetailedInfo(url, urlYear, title = '') {
             declaredDate: aiInstruct.declaredDate,
             isAdminMatch: aiInstruct.isAdminMatch,
             adminMatchedSubject: aiInstruct.adminMatchedSubject,
+            isSegundoLlamado: aiInstruct.isSegundoLlamado || false,
+            isAdminOpportunity: aiInstruct.isAdminOpportunity || false,
             publishingDirectives: aiInstruct.publishingDirectives,
             primaryLlamado: aiInstruct.primaryLlamado || null,
             llamadosSummary: aiInstruct.llamadosSummary || null,
@@ -425,7 +427,7 @@ async function fetchDetailedInfo(url, urlYear, title = '') {
         return { 
             subjects: [], plazas: [], specificDate: null, fullTextContent: '', isOld: false, needsReview: false, 
             distinctSubject: null, schoolName: 'Escuela Departamental', nivel: 'No especificado', declaredDate: null,
-            isAdminMatch: false, adminMatchedSubject: null, publishingDirectives: null,
+            isAdminMatch: false, adminMatchedSubject: null, isSegundoLlamado: false, isAdminOpportunity: false, publishingDirectives: null,
             primaryLlamado: null, llamadosSummary: null, llamados: [], caracteres: [], caracterSummary: null, 
             plazasList: [], materiasSummary: null, totalHoras: 0, plazasCount: 0 
         };
@@ -549,6 +551,8 @@ async function scrapeCGEPage(url) {
                     isTardio: isTardio,
                     isAdminMatch: details.isAdminMatch || false,
                     adminMatchedSubject: details.adminMatchedSubject || null,
+                    isSegundoLlamado: details.isSegundoLlamado || false,
+                    isAdminOpportunity: details.isAdminOpportunity || false,
                     publishingDirectives: details.publishingDirectives || null,
                     department: city,
                     originalText: text,

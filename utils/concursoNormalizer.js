@@ -207,6 +207,41 @@ export function classifyLevel(title, content = '', schoolName = '') {
     return 'No especificado';
 }
 
+export function checkIsSegundoLlamado(item) {
+    if (!item) return false;
+
+    // 1. Check in structured primaryLlamado
+    if (item.primaryLlamado && /(?:2[°ºoª]?|2do|segundo)\s*llamado/i.test(item.primaryLlamado)) {
+        return true;
+    }
+
+    // 2. Check in structured llamados array
+    if (item.llamados && Array.isArray(item.llamados)) {
+        const hasSecond = item.llamados.some(ll => 
+            /(?:2[°ºoª]?|2do|segundo)\s*llamado/i.test(ll.llamado || '')
+        );
+        if (hasSecond) return true;
+    }
+
+    // 3. Check in title, llamadosSummary, and content header
+    const textToScan = `${item.title || item.originalText || ''} ${(item.fullContent || '').slice(0, 500)} ${item.llamadosSummary || ''}`.toLowerCase();
+    const segundoLlamadoRegex = /(?:\b2[°ºoª]?\s*llamado\b|\b2do\s*llamado\b|\bsegundo\s*llamado\b|\b2[°ºoª]?\s*convocatoria\b|\b2da\s*convocatoria\b|\bsegunda\s*convocatoria\b)/i;
+
+    return segundoLlamadoRegex.test(textToScan);
+}
+
+export function checkAdminOpportunity(item) {
+    const adminCheck = checkAdminCredentialMatch(item);
+    const isSegundo = checkIsSegundoLlamado(item);
+
+    return {
+        isAdminMatch: adminCheck.isMatch,
+        adminMatchedSubject: adminCheck.matchedSubject,
+        isSegundoLlamado: isSegundo,
+        isAdminOpportunity: adminCheck.isMatch && isSegundo
+    };
+}
+
 export function normalizeConcursoItem(item) {
     if (!item) return item;
     const title = item.title || item.originalText || '';
@@ -237,7 +272,7 @@ export function normalizeConcursoItem(item) {
         nivel = classifyLevel(title, content, schoolName);
     }
 
-    // 3. Resolve admin match if missing
+    // 3. Resolve admin match and 2° llamado opportunity
     let isAdminMatch = item.isAdminMatch;
     let adminMatchedSubject = item.adminMatchedSubject;
     if (isAdminMatch === undefined) {
@@ -246,11 +281,21 @@ export function normalizeConcursoItem(item) {
         adminMatchedSubject = adminRes.matchedSubject;
     }
 
+    const isSegundoLlamado = item.isSegundoLlamado !== undefined 
+        ? item.isSegundoLlamado 
+        : checkIsSegundoLlamado(item);
+
+    const isAdminOpportunity = item.isAdminOpportunity !== undefined
+        ? item.isAdminOpportunity
+        : (isAdminMatch && isSegundoLlamado);
+
     return {
         ...item,
         nivel,
         schoolName,
         isAdminMatch,
-        adminMatchedSubject
+        adminMatchedSubject,
+        isSegundoLlamado,
+        isAdminOpportunity
     };
 }

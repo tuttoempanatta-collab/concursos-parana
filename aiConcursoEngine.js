@@ -942,7 +942,15 @@ function extractDeclaredDate(cleanContent) {
     return null;
 }
 
-const { checkAdminCredentialMatch } = require('./adminCredentials');
+function checkIsSegundoLlamado(item) {
+    if (!item) return false;
+    if (item.primaryLlamado && /(?:2[°ºoª]?|2do|segundo)\s*llamado/i.test(item.primaryLlamado)) return true;
+    if (item.llamados && Array.isArray(item.llamados)) {
+        if (item.llamados.some(ll => /(?:2[°ºoª]?|2do|segundo)\s*llamado/i.test(ll.llamado || ''))) return true;
+    }
+    const textToScan = `${item.title || item.originalText || ''} ${(item.fullContent || '').slice(0, 500)} ${item.llamadosSummary || ''}`.toLowerCase();
+    return /(?:\b2[°ºoª]?\s*llamado\b|\b2do\s*llamado\b|\bsegundo\s*llamado\b|\b2[°ºoª]?\s*convocatoria\b|\b2da\s*convocatoria\b|\bsegunda\s*convocatoria\b)/i.test(textToScan);
+}
 
 /**
  * AI Cognitive Instruction Pipeline for the Robot:
@@ -952,7 +960,7 @@ const { checkAdminCredentialMatch } = require('./adminCredentials');
 async function instructRobotForPublishing(cleanContent, title, urlYear = 2026) {
     const aiAnalysis = await analyzeConcurso(cleanContent, title, urlYear);
     const schoolName = extractSchoolName(title, cleanContent);
-    const nivel = classifyLevel(title, cleanContent);
+    const nivel = classifyLevel(title, cleanContent, schoolName);
     const declaredDate = extractDeclaredDate(cleanContent);
 
     // Check administrator credentials match
@@ -965,19 +973,32 @@ async function instructRobotForPublishing(cleanContent, title, urlYear = 2026) {
     };
     const adminMatch = checkAdminCredentialMatch(candidateItem);
 
+    const isSegundoLlamado = checkIsSegundoLlamado({
+        title,
+        primaryLlamado: aiAnalysis.primaryLlamado,
+        llamadosSummary: aiAnalysis.llamadosSummary,
+        llamados: aiAnalysis.llamados,
+        fullContent: cleanContent
+    });
+    const isAdminOpportunity = adminMatch.isMatch && isSegundoLlamado;
+
     return {
         ...aiAnalysis,
         schoolName,
         nivel,
         declaredDate,
+        isSegundoLlamado,
         isAdminMatch: adminMatch.isMatch,
         adminMatchedSubject: adminMatch.matchedSubject,
+        isAdminOpportunity,
         publishingDirectives: {
             schoolName,
             nivel,
             declaredDate,
+            isSegundoLlamado,
             isAdminMatch: adminMatch.isMatch,
             adminMatchedSubject: adminMatch.matchedSubject,
+            isAdminOpportunity,
             materiasSummary: aiAnalysis.materiasSummary,
             totalHoras: aiAnalysis.totalHoras,
             primaryLlamado: aiAnalysis.primaryLlamado,
@@ -989,6 +1010,7 @@ async function instructRobotForPublishing(cleanContent, title, urlYear = 2026) {
 module.exports = {
     analyzeConcurso,
     instructRobotForPublishing,
+    checkIsSegundoLlamado,
     extractSchoolName,
     formatCanonicalSchoolName,
     classifyLevel,

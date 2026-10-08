@@ -12,9 +12,11 @@ import { collection, getDocs, query, orderBy, doc, getDoc, setDoc, updateDoc, in
 import { 
   normalizeConcursoItem, 
   extractSchoolName, 
-  formatCanonicalSchoolName,
+  formatCanonicalSchoolName, 
   classifyLevel, 
-  checkAdminCredentialMatch 
+  checkAdminCredentialMatch,
+  checkIsSegundoLlamado,
+  checkAdminOpportunity
 } from '../utils/concursoNormalizer';
 
 export default function Home() {
@@ -23,9 +25,10 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Visibility State
+  // Visibility & Pin State
   const [hideInactive, setHideInactive] = useState(false);
   const [hiddenCardIds, setHiddenCardIds] = useState([]);
+  const [pinnedCardIds, setPinnedCardIds] = useState([]);
   
   // Filter state
   const [activeFilters, setActiveFilters] = useState({
@@ -39,6 +42,7 @@ export default function Home() {
   const [selectedSchool, setSelectedSchool] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
   const [onlyAdminMatches, setOnlyAdminMatches] = useState(false);
+  const [onlyAdminOpportunities, setOnlyAdminOpportunities] = useState(false);
   const [showAdminDrawer, setShowAdminDrawer] = useState(false);
 
   // User Location State
@@ -56,13 +60,20 @@ export default function Home() {
   });
   const [liveCount, setLiveCount] = useState(1);
 
-  // Persistence: Load hidden IDs on mount
+  // Persistence: Load hidden and pinned IDs on mount
   useEffect(() => {
     const saved = localStorage.getItem('hiddenConcursos');
     if (saved) {
       try {
         setHiddenCardIds(JSON.parse(saved));
       } catch (e) { console.error("Error loading hidden contests", e); }
+    }
+
+    const savedPinned = localStorage.getItem('pinnedConcursos');
+    if (savedPinned) {
+      try {
+        setPinnedCardIds(JSON.parse(savedPinned));
+      } catch (e) { console.error("Error loading pinned contests", e); }
     }
     
     // Fetch dynamic settings from Firestore
@@ -81,6 +92,15 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem('hiddenConcursos', JSON.stringify(hiddenCardIds));
   }, [hiddenCardIds]);
+
+  // Persistence: Save pinned IDs on change
+  useEffect(() => {
+    localStorage.setItem('pinnedConcursos', JSON.stringify(pinnedCardIds));
+  }, [pinnedCardIds]);
+
+  const handleTogglePin = (id) => {
+    setPinnedCardIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
 
   // Visitor Counter Logic
   useEffect(() => {
@@ -472,10 +492,19 @@ export default function Home() {
       .filter(Boolean)
   )).sort();
 
+  const resolveAdminOpportunity = (c) => {
+    if (c.isAdminOpportunity !== undefined) return c.isAdminOpportunity;
+    const isAdm = c.isAdminMatch !== undefined ? c.isAdminMatch : checkAdminCredentialMatch(c).isMatch;
+    const isSeg = c.isSegundoLlamado !== undefined ? c.isSegundoLlamado : checkIsSegundoLlamado(c);
+    return isAdm && isSeg;
+  };
+
   const adminMatchesList = concursos.filter(c => {
     if (c.isAdminMatch !== undefined) return c.isAdminMatch;
     return checkAdminCredentialMatch(c).isMatch;
   });
+
+  const adminOpportunityList = concursos.filter(c => resolveAdminOpportunity(c));
 
   const filteredConcursos = concursos.filter(c => {
     // 1. Level filter
@@ -490,9 +519,11 @@ export default function Home() {
     const cCity = (c.department || '').replace('(Dpto)', '').trim();
     const cityMatch = !selectedCity || cCity.toLowerCase() === selectedCity.toLowerCase();
 
-    // 4. Admin match filter
+    // 4. Admin match & Opportunity filter
     const cIsAdmin = c.isAdminMatch !== undefined ? c.isAdminMatch : checkAdminCredentialMatch(c).isMatch;
-    const adminMatch = !onlyAdminMatches || cIsAdmin;
+    const cIsOpp = resolveAdminOpportunity(c);
+    if (onlyAdminOpportunities && !cIsOpp) return false;
+    if (onlyAdminMatches && !cIsAdmin) return false;
 
     // 5. Search query
     const searchMatch = searchQuery === '' || 
@@ -512,7 +543,7 @@ export default function Home() {
     const isPast = docDate && docDate < now;
     const hideMatch = !(hideInactive && isPast) && !hiddenCardIds.includes(c.id);
       
-    return levelMatch && schoolMatch && cityMatch && adminMatch && searchMatch && hideMatch;
+    return levelMatch && schoolMatch && cityMatch && searchMatch && hideMatch;
   });
 
   const isNovedad = (c) => {
@@ -522,34 +553,37 @@ export default function Home() {
     return d >= startOfToday;
   };
 
-  // 1. Novedades del día (publicadas hoy y vigentes) -> Rosado (#f472b6)
-  const concursosNuevos = filteredConcursos.filter(c => isNovedad(c));
+  // 0. Concursos Fijados (Siempre visibles primero en la pantalla)
+  const concursosFijados = filteredConcursos.filter(c => pinnedCardIds.includes(c.id));
 
-  // 2. Concursos de hoy activos (horario posterior o en curso) -> Emerald/Cyan
+  // 1. Novedades del día (publicadas hoy y vigentes, excluyendo fijados)
+  const concursosNuevos = filteredConcursos.filter(c => !pinnedCardIds.includes(c.id) && isNovedad(c));
+
+  // 2. Concursos de hoy activos (horario posterior o en curso, excluyendo fijados)
   const concursosHoy = filteredConcursos.filter(c => {
-    if (!c.date || isNovedad(c)) return false;
+    if (pinnedCardIds.includes(c.id) || !c.date || isNovedad(c)) return false;
     const d = new Date(c.date);
     return d >= now && d < endOfToday;
   });
 
-  // 3. Concursos de mañana -> Blue (#60a5fa)
+  // 3. Concursos de mañana (excluyendo fijados)
   const concursosManana = filteredConcursos.filter(c => {
-    if (!c.date || isNovedad(c)) return false;
+    if (pinnedCardIds.includes(c.id) || !c.date || isNovedad(c)) return false;
     const d = new Date(c.date);
     return d >= startOfTomorrow && d < startOfDayAfter;
   });
 
-  // 4. Próximos Concursos (más allá de mañana o sin fecha fija)
+  // 4. Próximos Concursos (más allá de mañana o sin fecha fija, excluyendo fijados)
   const concursosFuturos = filteredConcursos.filter(c => {
-    if (isNovedad(c)) return false;
+    if (pinnedCardIds.includes(c.id) || isNovedad(c)) return false;
     if (!c.date) return true;
     const d = new Date(c.date);
     return d >= startOfDayAfter;
   });
 
-  // 5. Concursos que ya pasaron su hora pero tienen < 2 semanas -> Verde (#10b981) (Sin apagar)
+  // 5. Concursos que ya pasaron su hora pero tienen < 2 semanas (excluyendo fijados)
   const concursosPasadosRecientes = filteredConcursos.filter(c => {
-    if (isNovedad(c)) return false;
+    if (pinnedCardIds.includes(c.id) || isNovedad(c)) return false;
     if (!c.date) return false;
     const d = new Date(c.date);
     return d < now && d >= cutoffDate;
@@ -624,8 +658,8 @@ export default function Home() {
               <button 
                 onClick={() => setShowAdminDrawer(true)}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.12)', 
-                  border: '1.5px solid #ffffff',
+                  background: adminOpportunityList.length > 0 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255, 255, 255, 0.12)', 
+                  border: adminOpportunityList.length > 0 ? '1.5px solid #f59e0b' : '1.5px solid #ffffff',
                   color: '#ffffff', 
                   padding: '0.25rem 0.65rem', 
                   borderRadius: '6px', 
@@ -635,12 +669,24 @@ export default function Home() {
                   gap: '0.4rem',
                   fontSize: '0.75rem', 
                   fontWeight: 800,
-                  boxShadow: '0 0 14px rgba(255, 255, 255, 0.4)'
+                  boxShadow: adminOpportunityList.length > 0 ? '0 0 16px rgba(245, 158, 11, 0.6)' : '0 0 14px rgba(255, 255, 255, 0.4)'
                 }}
                 title="Avisos de Concursos para el Administrador (Colombo Francisco)"
               >
-                <Star size={14} fill="#ffffff" color="#ffffff" />
+                <Star size={14} fill={adminOpportunityList.length > 0 ? '#f59e0b' : '#ffffff'} color={adminOpportunityList.length > 0 ? '#f59e0b' : '#ffffff'} />
                 Avisos Admin ({adminMatchesList.length})
+                {adminOpportunityList.length > 0 && (
+                  <span style={{
+                    background: '#f59e0b',
+                    color: '#0f172a',
+                    padding: '1px 5px',
+                    borderRadius: '4px',
+                    fontSize: '0.65rem',
+                    fontWeight: 900
+                  }}>
+                    🔥 {adminOpportunityList.length} en 2°
+                  </span>
+                )}
               </button>
             )}
             
@@ -750,11 +796,14 @@ export default function Home() {
             })}
           </div>
 
-          {/* Quick toggle for only Admin Matches */}
+          {/* Quick toggle for only Admin Matches and 2° Llamado Opportunities */}
           {adminMatchesList.length > 0 && (
-            <div style={{marginTop: '1.25rem'}}>
+            <div style={{marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
               <button
-                onClick={() => setOnlyAdminMatches(!onlyAdminMatches)}
+                onClick={() => {
+                  setOnlyAdminMatches(!onlyAdminMatches);
+                  if (!onlyAdminMatches) setOnlyAdminOpportunities(false);
+                }}
                 style={{
                   width: '100%',
                   padding: '0.65rem 0.8rem',
@@ -776,6 +825,47 @@ export default function Home() {
                 <span>🌟</span>
                 <span>{onlyAdminMatches ? 'Mostrando solo Admin' : `Solo Concursos Admin (${adminMatchesList.length})`}</span>
               </button>
+
+              {/* Quick toggle for only Admin 2° Llamado Opportunities */}
+              {adminOpportunityList.length > 0 && (
+                <button
+                  onClick={() => {
+                    setOnlyAdminOpportunities(!onlyAdminOpportunities);
+                    if (!onlyAdminOpportunities) setOnlyAdminMatches(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.8rem',
+                    borderRadius: '8px',
+                    border: onlyAdminOpportunities ? '1.5px solid #f59e0b' : '1px solid rgba(245, 158, 11, 0.35)',
+                    background: onlyAdminOpportunities ? 'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)' : 'rgba(245, 158, 11, 0.08)',
+                    color: onlyAdminOpportunities ? '#ffffff' : '#fbbf24',
+                    fontWeight: 800,
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    boxShadow: onlyAdminOpportunities ? '0 0 18px rgba(245, 158, 11, 0.5)' : 'none',
+                    transition: 'all 0.2s ease'
+                  }}
+                  title="Ver únicamente concursos afines al administrador que están en 2° Llamado"
+                >
+                  <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+                    <span>🔥</span>
+                    <span>Oportunidades 2° Llamado</span>
+                  </div>
+                  <span style={{
+                    background: onlyAdminOpportunities ? 'rgba(0,0,0,0.3)' : 'rgba(245, 158, 11, 0.2)',
+                    padding: '0.15rem 0.45rem',
+                    borderRadius: '4px',
+                    fontSize: '0.72rem',
+                    fontWeight: 900
+                  }}>
+                    {adminOpportunityList.length}
+                  </span>
+                </button>
+              )}
             </div>
           )}
 
@@ -891,6 +981,60 @@ export default function Home() {
             </div>
           ) : (
             <div style={{display: 'flex', flexDirection: 'column', gap: '2.5rem'}}>
+               {/* 0. SECTOR PRIORITARIO: CONCURSOS FIJADOS (PINNED) - SIEMPRE VISIBLES PRIMERO */}
+               {concursosFijados.length > 0 && (
+                <div style={{
+                  marginBottom: '1rem',
+                  padding: '1.25rem',
+                  background: 'rgba(245, 158, 11, 0.04)',
+                  borderRadius: '16px',
+                  border: '1.5px solid rgba(245, 158, 11, 0.35)',
+                  boxShadow: '0 0 25px rgba(245, 158, 11, 0.1)'
+                }}>
+                  <div style={{
+                    marginBottom: '1.25rem', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '0.75rem'
+                  }}>
+                    <h2 style={{
+                      margin: 0, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.6rem', 
+                      color: '#f59e0b',
+                      fontSize: '1.2rem',
+                      fontWeight: 800
+                    }}>
+                      <span style={{ fontSize: '1.35rem' }}>📌</span>
+                      Concursos Fijados ({concursosFijados.length})
+                    </h2>
+                    <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: 600, background: 'rgba(245, 158, 11, 0.15)', padding: '0.2rem 0.6rem', borderRadius: '6px' }}>
+                      ⭐ Siempre visibles al inicio de la pantalla
+                    </span>
+                  </div>
+                  <div className="concursos-grid">
+                    {concursosFijados.map(concurso => (
+                      <ConcursoCard 
+                        key={`pinned-${concurso.id}`} 
+                        concurso={{ 
+                          ...concurso, 
+                          nivel: resolveLevel(concurso), 
+                          schoolName: resolveSchoolName(concurso),
+                          isAdminOpportunity: resolveAdminOpportunity(concurso)
+                        }} 
+                        onHide={() => handleHideCard(concurso.id)}
+                        onTogglePin={() => handleTogglePin(concurso.id)}
+                        isPinned={true}
+                        userLocation={userLocation}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
                {concursosNuevos.length > 0 && (
                 <div>
                   <h2 style={{marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#f472b6'}}>
@@ -901,8 +1045,15 @@ export default function Home() {
                     {concursosNuevos.map(concurso => (
                       <ConcursoCard 
                         key={concurso.id} 
-                        concurso={{ ...concurso, nivel: resolveLevel(concurso), schoolName: resolveSchoolName(concurso) }} 
+                        concurso={{ 
+                          ...concurso, 
+                          nivel: resolveLevel(concurso), 
+                          schoolName: resolveSchoolName(concurso),
+                          isAdminOpportunity: resolveAdminOpportunity(concurso)
+                        }} 
                         onHide={() => handleHideCard(concurso.id)}
+                        onTogglePin={() => handleTogglePin(concurso.id)}
+                        isPinned={pinnedCardIds.includes(concurso.id)}
                         userLocation={userLocation}
                         isNew={true}
                       />
@@ -920,8 +1071,15 @@ export default function Home() {
                     {concursosHoy.map(concurso => (
                       <ConcursoCard 
                         key={concurso.id} 
-                        concurso={{ ...concurso, nivel: resolveLevel(concurso), schoolName: resolveSchoolName(concurso) }} 
+                        concurso={{ 
+                          ...concurso, 
+                          nivel: resolveLevel(concurso), 
+                          schoolName: resolveSchoolName(concurso),
+                          isAdminOpportunity: resolveAdminOpportunity(concurso)
+                        }} 
                         onHide={() => handleHideCard(concurso.id)}
+                        onTogglePin={() => handleTogglePin(concurso.id)}
+                        isPinned={pinnedCardIds.includes(concurso.id)}
                         userLocation={userLocation}
                         isToday={true}
                       />
@@ -940,8 +1098,15 @@ export default function Home() {
                     {concursosManana.map(concurso => (
                       <ConcursoCard 
                         key={concurso.id} 
-                        concurso={{ ...concurso, nivel: resolveLevel(concurso), schoolName: resolveSchoolName(concurso) }} 
+                        concurso={{ 
+                          ...concurso, 
+                          nivel: resolveLevel(concurso), 
+                          schoolName: resolveSchoolName(concurso),
+                          isAdminOpportunity: resolveAdminOpportunity(concurso)
+                        }} 
                         onHide={() => handleHideCard(concurso.id)}
+                        onTogglePin={() => handleTogglePin(concurso.id)}
+                        isPinned={pinnedCardIds.includes(concurso.id)}
                         userLocation={userLocation}
                       />
                     ))}
@@ -959,8 +1124,15 @@ export default function Home() {
                     {concursosFuturos.map(concurso => (
                       <ConcursoCard 
                         key={concurso.id} 
-                        concurso={{ ...concurso, nivel: resolveLevel(concurso), schoolName: resolveSchoolName(concurso) }} 
+                        concurso={{ 
+                          ...concurso, 
+                          nivel: resolveLevel(concurso), 
+                          schoolName: resolveSchoolName(concurso),
+                          isAdminOpportunity: resolveAdminOpportunity(concurso)
+                        }} 
                         onHide={() => handleHideCard(concurso.id)}
+                        onTogglePin={() => handleTogglePin(concurso.id)}
+                        isPinned={pinnedCardIds.includes(concurso.id)}
                         userLocation={userLocation}
                       />
                     ))}
@@ -978,8 +1150,15 @@ export default function Home() {
                     {concursosPasadosRecientes.map(concurso => (
                       <ConcursoCard 
                         key={concurso.id} 
-                        concurso={{ ...concurso, nivel: resolveLevel(concurso), schoolName: resolveSchoolName(concurso) }} 
+                        concurso={{ 
+                          ...concurso, 
+                          nivel: resolveLevel(concurso), 
+                          schoolName: resolveSchoolName(concurso),
+                          isAdminOpportunity: resolveAdminOpportunity(concurso)
+                        }} 
                         onHide={() => handleHideCard(concurso.id)}
+                        onTogglePin={() => handleTogglePin(concurso.id)}
+                        isPinned={pinnedCardIds.includes(concurso.id)}
                         userLocation={userLocation}
                       />
                     ))}
@@ -1078,59 +1257,111 @@ export default function Home() {
               Se encontraron <strong>{adminMatchesList.length} concursos</strong> vigentes compatibles con tus títulos y habilitaciones docentes oficiales (TIC, Computación, Preceptor, Taller STE, Dibujo Técnico, Bromatología, Educación Tecnológica).
             </div>
 
+            {adminOpportunityList.length > 0 && (
+              <div style={{
+                marginBottom: '0.75rem',
+                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(180, 83, 9, 0.25) 100%)',
+                border: '1.5px solid #f59e0b',
+                borderRadius: '10px',
+                padding: '0.65rem 0.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                boxShadow: '0 0 16px rgba(245, 158, 11, 0.3)'
+              }}>
+                <span style={{ fontSize: '1.4rem' }}>🔥</span>
+                <div style={{ fontSize: '0.82rem', color: '#fef3c7' }}>
+                  <strong>¡Atención Francisco!</strong> Tienes <strong>{adminOpportunityList.length} concurso(s) en 2° Llamado</strong> de tu especialidad. Al estar en segundo llamado, las posibilidades de adjudicación son mayores.
+                </div>
+              </div>
+            )}
+
             <div style={{overflowY: 'auto', flex: 1, paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
               {adminMatchesList.length === 0 ? (
                 <p style={{color: '#94a3b8', textAlign: 'center', padding: '2rem 0'}}>No hay concursos activos para el administrador en este momento.</p>
               ) : (
-                adminMatchesList.map(item => (
-                  <div key={item.id} style={{
-                    background: 'rgba(255, 255, 255, 0.04)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    borderRadius: '12px',
-                    padding: '0.85rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '6px'
-                  }}>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px'}}>
-                      <span style={{background: '#ffffff', color: '#0f172a', fontWeight: 800, fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: '4px'}}>
-                        {item.adminMatchedSubject || 'Perfil Administrador'}
-                      </span>
-                      <span style={{fontSize: '0.72rem', color: '#38bdf8', fontWeight: 600}}>
-                        {item.department?.replace('(Dpto)', '').trim()}
-                      </span>
-                    </div>
-                    <div style={{fontWeight: 700, fontSize: '0.88rem', color: '#f8fafc'}}>
-                      {item.schoolName || item.title}
-                    </div>
-                    {item.materiasSummary && (
-                      <div style={{fontSize: '0.78rem', color: '#34d399'}}>
-                        📖 {item.materiasSummary}
+                [...adminMatchesList]
+                  .sort((a, b) => (resolveAdminOpportunity(b) ? 1 : 0) - (resolveAdminOpportunity(a) ? 1 : 0))
+                  .map(item => {
+                    const isOpp = resolveAdminOpportunity(item);
+                    return (
+                      <div key={item.id} style={{
+                        background: isOpp ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%)' : 'rgba(255, 255, 255, 0.04)',
+                        border: isOpp ? '1.5px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.2)',
+                        boxShadow: isOpp ? '0 0 16px rgba(245, 158, 11, 0.25)' : 'none',
+                        borderRadius: '12px',
+                        padding: '0.85rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                        position: 'relative'
+                      }}>
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', flexWrap: 'wrap'}}>
+                          <div style={{display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap'}}>
+                            <span style={{
+                              background: isOpp ? '#f59e0b' : '#ffffff',
+                              color: '#0f172a',
+                              fontWeight: 800,
+                              fontSize: '0.7rem',
+                              padding: '0.2rem 0.5rem',
+                              borderRadius: '4px'
+                            }}>
+                              {item.adminMatchedSubject || 'Perfil Administrador'}
+                            </span>
+                            {isOpp && (
+                              <span style={{
+                                background: 'rgba(245, 158, 11, 0.25)',
+                                color: '#fbbf24',
+                                border: '1px solid #f59e0b',
+                                fontWeight: 800,
+                                fontSize: '0.68rem',
+                                padding: '0.15rem 0.45rem',
+                                borderRadius: '4px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px'
+                              }}>
+                                🔥 2° LLAMADO
+                              </span>
+                            )}
+                          </div>
+                          <span style={{fontSize: '0.72rem', color: '#38bdf8', fontWeight: 600}}>
+                            {item.department?.replace('(Dpto)', '').trim()}
+                          </span>
+                        </div>
+                        <div style={{fontWeight: 700, fontSize: '0.88rem', color: isOpp ? '#fef3c7' : '#f8fafc'}}>
+                          {item.schoolName || item.title}
+                        </div>
+                        {item.materiasSummary && (
+                          <div style={{fontSize: '0.78rem', color: '#34d399'}}>
+                            📖 {item.materiasSummary}
+                          </div>
+                        )}
+                        {item.primaryLlamado && (
+                          <div style={{fontSize: '0.75rem', color: isOpp ? '#f59e0b' : '#fbbf24', fontWeight: isOpp ? 700 : 500}}>
+                            ⏰ {item.primaryLlamado}
+                          </div>
+                        )}
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px'}}>
+                          <span style={{fontSize: '0.7rem', color: '#94a3b8'}}>
+                            {item.date ? new Date(item.date).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Fecha a confirmar'} hs
+                          </span>
+                          <a 
+                            href={item.link} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            style={{
+                              fontSize: '0.75rem', color: '#ffffff', textDecoration: 'none', background: isOpp ? 'rgba(245, 158, 11, 0.3)' : 'rgba(255,255,255,0.15)',
+                              border: isOpp ? '1px solid rgba(245, 158, 11, 0.5)' : 'none',
+                              padding: '0.25rem 0.6rem', borderRadius: '6px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px'
+                            }}
+                          >
+                            Ver en CGE <ExternalLink size={12} />
+                          </a>
+                        </div>
                       </div>
-                    )}
-                    {item.primaryLlamado && (
-                      <div style={{fontSize: '0.75rem', color: '#fbbf24'}}>
-                        ⏰ {item.primaryLlamado}
-                      </div>
-                    )}
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px'}}>
-                      <span style={{fontSize: '0.7rem', color: '#94a3b8'}}>
-                        {item.date ? new Date(item.date).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Fecha a confirmar'} hs
-                      </span>
-                      <a 
-                        href={item.link} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        style={{
-                          fontSize: '0.75rem', color: '#ffffff', textDecoration: 'none', background: 'rgba(255,255,255,0.15)',
-                          padding: '0.25rem 0.6rem', borderRadius: '6px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px'
-                        }}
-                      >
-                        Ver en CGE <ExternalLink size={12} />
-                      </a>
-                    </div>
-                  </div>
-                ))
+                    );
+                  })
               )}
             </div>
 

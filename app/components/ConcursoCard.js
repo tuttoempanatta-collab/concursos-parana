@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { differenceInSeconds, parseISO } from 'date-fns';
-import { Clock, CalendarDays, ExternalLink, MapPin, EyeOff, Map as MapIcon, Route, BookOpen } from 'lucide-react';
+import { Clock, CalendarDays, ExternalLink, MapPin, EyeOff, Map as MapIcon, Route, BookOpen, Pin } from 'lucide-react';
 
 // Haversine formula to calculate distance between two coordinates
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -18,7 +18,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return d;
 }
 
-export default function ConcursoCard({ concurso, onHide, userLocation, isRecent, isNew, isToday, isExpired: forceExpired }) {
+export default function ConcursoCard({ concurso, onHide, onTogglePin, isPinned, userLocation, isRecent, isNew, isToday, isExpired: forceExpired }) {
   const [timeLeft, setTimeLeft] = useState(null);
   const [showAllPlazas, setShowAllPlazas] = useState(false);
 
@@ -83,14 +83,12 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
   // Never turn off or dim cards within the 2-week window; forceExpired is reserved for >14 days
   const isExpired = forceExpired || false; 
 
-  // Dynamic Theme Logic according to business rules:
-  // 1. Admin Credential Match: White (#ffffff) with halo glow
-  // 2. Carga Tardía: Yellow (#facc15)
-  // 3. Recientes / Novedades: Pink (#f472b6)
-  // 4. Activos: Today (Cyan #38bdf8), Recent (Orange #fb923c), Future (var(--color-primario))
-  // 5. Pasados (< 2 semanas): Green (#10b981) - Visible, no dimming
+  const isOpportunity = concurso.isAdminOpportunity || (concurso.isAdminMatch && (concurso.isSegundoLlamado || /(?:2[°ºoª]?|2do|segundo)\s*llamado/i.test(`${concurso.primaryLlamado || ''} ${concurso.title || ''}`)));
+
   let themeColor = '#10b981'; // Green default for past (< 2 weeks)
-  if (concurso.isAdminMatch) {
+  if (isOpportunity) {
+    themeColor = '#f59e0b'; // Amber Gold for Admin Opportunities (2° Llamado)
+  } else if (concurso.isAdminMatch) {
     themeColor = '#ffffff'; // White for Admin matches
   } else if (concurso.isTardio) {
     themeColor = '#facc15'; // Yellow for Late uploads
@@ -106,23 +104,29 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
   
   const isActive = !isPast;
 
-  const cardBorderColor = concurso.isAdminMatch 
-    ? '#ffffff' 
-    : concurso.isTardio 
-      ? '#facc15' 
-      : `${themeColor}44`;
+  const cardBorderColor = isOpportunity
+    ? '#f59e0b'
+    : concurso.isAdminMatch 
+      ? '#ffffff' 
+      : concurso.isTardio 
+        ? '#facc15' 
+        : `${themeColor}44`;
 
-  const cardBoxShadow = concurso.isAdminMatch
-    ? '0 0 25px rgba(255, 255, 255, 0.4), inset 0 0 0 1.5px #ffffff'
-    : concurso.isTardio
-      ? '0 10px 30px -10px rgba(250, 204, 21, 0.45), inset 0 0 0 1.5px rgba(250, 204, 21, 0.5)'
-      : `0 10px 30px -10px ${themeColor}44, inset 0 0 0 1px ${themeColor}33`;
+  const cardBoxShadow = isOpportunity
+    ? '0 0 32px rgba(245, 158, 11, 0.65), inset 0 0 0 2px #f59e0b'
+    : concurso.isAdminMatch
+      ? '0 0 25px rgba(255, 255, 255, 0.4), inset 0 0 0 1.5px #ffffff'
+      : concurso.isTardio
+        ? '0 10px 30px -10px rgba(250, 204, 21, 0.45), inset 0 0 0 1.5px rgba(250, 204, 21, 0.5)'
+        : `0 10px 30px -10px ${themeColor}44, inset 0 0 0 1px ${themeColor}33`;
 
-  const cardBackground = concurso.isAdminMatch
-    ? 'rgba(255, 255, 255, 0.05)'
-    : concurso.isTardio
-      ? 'rgba(250, 204, 21, 0.03)'
-      : undefined;
+  const cardBackground = isOpportunity
+    ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.09) 0%, rgba(255, 255, 255, 0.04) 100%)'
+    : concurso.isAdminMatch
+      ? 'rgba(255, 255, 255, 0.05)'
+      : concurso.isTardio
+        ? 'rgba(250, 204, 21, 0.03)'
+        : undefined;
 
   // Resolve Caracteres (STF / STV / SCV) with resilient fallback
   const resolvedCaracteres = (concurso.caracteres && concurso.caracteres.length > 0)
@@ -272,8 +276,27 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
 
       <div className="card-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
         <div style={{display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap'}}>
-          {/* Admin Match Badge */}
-          {concurso.isAdminMatch && (
+          {/* Admin Opportunity (2° Llamado) / Admin Match Badge */}
+          {isOpportunity ? (
+            <span 
+              className="level-badge" 
+              style={{
+                background: 'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)',
+                color: '#ffffff',
+                fontWeight: 900,
+                border: '1.5px solid #fbbf24',
+                boxShadow: '0 0 18px rgba(245, 158, 11, 0.85)',
+                letterSpacing: '0.04em',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '0.25rem 0.65rem'
+              }}
+              title="¡Concurso en 2° Llamado compatible con tu credencial docente! Alta prioridad de adjudicación."
+            >
+              🔥⭐ OPORTUNIDAD ADMIN · 2° LLAMADO {concurso.adminMatchedSubject ? `(${concurso.adminMatchedSubject})` : ''}
+            </span>
+          ) : concurso.isAdminMatch ? (
             <span 
               className="level-badge" 
               style={{
@@ -287,7 +310,7 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
             >
               🌟 CONCURSO PARA EL ADMINISTRADOR {concurso.adminMatchedSubject ? `(${concurso.adminMatchedSubject})` : ''}
             </span>
-          )}
+          ) : null}
 
           {/* Late Upload Badge */}
           {concurso.isTardio && !concurso.isAdminMatch && (
@@ -349,18 +372,63 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
               {car.codigo} · {car.nombre.replace('Suplente ', '')}
             </span>
           ))}
+
+          {isPinned && (
+            <span 
+              className="level-badge" 
+              style={{
+                background: 'rgba(245, 158, 11, 0.18)',
+                color: '#f59e0b',
+                border: '1.5px solid rgba(245, 158, 11, 0.5)',
+                fontWeight: 900,
+                letterSpacing: '0.04em',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              📌 FIJADO AL TOPE
+            </span>
+          )}
         </div>
-        <button 
-          onClick={onHide} 
-          title="Ocultar de la lista"
-          style={{
-            background: 'none', border: 'none', color: 'var(--text-muted)',
-            cursor: 'pointer', padding: '0.25rem', display: 'flex', alignItems: 'center'
-          }}
-          className="hide-btn"
-        >
-          <EyeOff size={18} />
-        </button>
+
+        <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+          {onTogglePin && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onTogglePin();
+              }}
+              title={isPinned ? "Desfijar de la cima de la pantalla" : "Fijar al inicio de la pantalla"}
+              style={{
+                background: isPinned ? 'rgba(245, 158, 11, 0.2)' : 'none',
+                border: isPinned ? '1px solid rgba(245, 158, 11, 0.5)' : 'none',
+                borderRadius: '6px',
+                color: isPinned ? '#f59e0b' : 'var(--text-muted)',
+                cursor: 'pointer',
+                padding: '0.25rem',
+                display: 'flex',
+                alignItems: 'center',
+                transition: 'all 0.2s ease'
+              }}
+              className="pin-btn"
+            >
+              <Pin size={17} fill={isPinned ? '#f59e0b' : 'none'} style={{ transform: isPinned ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }} />
+            </button>
+          )}
+
+          <button 
+            onClick={onHide} 
+            title="Ocultar de la lista"
+            style={{
+              background: 'none', border: 'none', color: 'var(--text-muted)',
+              cursor: 'pointer', padding: '0.25rem', display: 'flex', alignItems: 'center'
+            }}
+            className="hide-btn"
+          >
+            <EyeOff size={18} />
+          </button>
+        </div>
       </div>
 
       {/* School Name Label */}
@@ -368,7 +436,7 @@ export default function ConcursoCard({ concurso, onHide, userLocation, isRecent,
         <div style={{
           fontSize: '0.82rem',
           fontWeight: 700,
-          color: concurso.isAdminMatch ? '#ffffff' : '#38bdf8',
+          color: isOpportunity ? '#fbbf24' : concurso.isAdminMatch ? '#ffffff' : '#38bdf8',
           margin: '0.35rem 0 0.15rem 0',
           display: 'flex',
           alignItems: 'center',
