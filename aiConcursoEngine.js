@@ -158,16 +158,20 @@ function extractMultiLlamados(text) {
         }
     }
 
-    // Format C: "• A las 11:00. 1° llamado." / "A las 11:15. 1° llamado."
+    // Format C: "• A las 11:00. 1° llamado." / "A las 11:15. 1° llamado." / "• A las 8:30 Hs (1°) llamado"
     if (llamados.length === 0) {
-        const regexC = /(?:•|\*|-)?\s*(?:a\s*las|a\s*partir\s*de\s*las)?\s*(\d{1,2}[:\.]\d{2})[\s\.]+(\d+[°º]?\s*llamado|primer\s*llamado|segundo\s*llamado|tercer\s*llamado)/gi;
+        const regexC = /(?:•|\*|-)?\s*(?:a\s*las|a\s*partir\s*de\s*las)?\s*(\d{1,2}[:\.]\d{2})\s*(?:hs|horas|h)?[\s\.]*\(?(\d+[°º]?|primer|segundo|tercer)\)?\s*(?:°|º)?\s*llamado/gi;
         while ((match = regexC.exec(text)) !== null) {
             const rawTime = match[1].trim().replace('.', ':');
-            const rawCall = match[2].trim();
+            let rawCall = match[2].trim();
+            if (/^\d+$/.test(rawCall)) rawCall = `${rawCall}° Llamado`;
+            else rawCall = rawCall.replace(/primer/i, '1° Llamado').replace(/segundo/i, '2° Llamado').replace(/tercer/i, '3° Llamado');
+            if (!rawCall.toLowerCase().includes('llamado')) rawCall = `${rawCall} Llamado`;
+            rawCall = rawCall.replace(/°+/g, '°');
             let timeNorm = rawTime;
             if (!timeNorm.includes(':')) timeNorm = `${timeNorm}:00`;
             llamados.push({
-                llamado: rawCall.replace(/primer\s*llamado/i, '1° Llamado').replace(/segundo\s*llamado/i, '2° Llamado'),
+                llamado: rawCall,
                 time: timeNorm,
                 materia: null,
                 hsCatedra: null,
@@ -197,7 +201,13 @@ function extractMultiLlamados(text) {
             const h = timeMatch[1].padStart(2, '0');
             const m = (timeMatch[2] || '00').padStart(2, '0');
             const callName = singleCallMatch[1].replace(/1er\s*llamado|primer\s*llamado/i, '1° Llamado').replace(/2do\s*llamado|segundo\s*llamado/i, '2° Llamado');
-            const cargo = cargoMatch ? cargoMatch[1].trim() : null;
+            let cargo = null;
+            if (cargoMatch) {
+                const rawC = cargoMatch[1].trim();
+                if (!/^(?:para\s+el|el\s+d[íi]a|seg[uú]n|conforme|art|resol|concurso)/i.test(rawC)) {
+                    cargo = rawC;
+                }
+            }
             primaryLlamado = `${callName}: ${h}:${m} hs${cargo ? ` (${cargo})` : ''}`;
             llamadosSummary = primaryLlamado;
             llamados.push({
@@ -653,6 +663,29 @@ function parseConcursoHeuristics(cleanText, fallbackText, hintYear) {
                 refDate.setUTCHours(hours + 3, minutes, 0, 0);
                 confidence = 'medium';
                 break;
+            }
+        }
+    }
+
+    // 4. Fallback to numeric date (e.g. "para el día miércoles 14/10/2026", "el día 14/10/2026")
+    if (!refDate) {
+        const numericDateRegex = /(?:para\s+el\s+d[íi]a|el\s+d[íi]a|convoca.*?para\s+el|fecha:?)\s*(?:(?:lunes|martes|mi[ée]rcoles|jueves|viernes|s[áa]bado|domingo)\s+)?(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?/i;
+        const numMatch = cleanText.match(numericDateRegex);
+        if (numMatch) {
+            let day = parseInt(numMatch[1], 10);
+            let monthIndex = parseInt(numMatch[2], 10) - 1;
+            let year = numMatch[3] ? parseInt(numMatch[3], 10) : defaultYear;
+            if (year < 100) year += 2000;
+            if (monthIndex >= 0 && monthIndex <= 11 && day >= 1 && day <= 31) {
+                refDate = new Date(Date.UTC(year, monthIndex, day));
+                const validTime = extractValidContestTime(cleanText);
+                if (validTime) {
+                    hours = validTime.hours;
+                    minutes = validTime.minutes;
+                }
+                refDate.setUTCHours(hours + 3, minutes, 0, 0);
+                confidence = 'high';
+                matchedPatternId = 'explicit_numeric_date';
             }
         }
     }

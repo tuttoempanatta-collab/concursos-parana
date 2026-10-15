@@ -253,15 +253,17 @@ function extractEventDate(text, fallbackText, hintYear) {
         }
     }
 
-    // 3. Fallback to numeric date (explicitly preceded by "día" or "fecha")
+    // 3. Fallback to numeric date (explicitly preceded by "día", "para el día", or "fecha", with optional day of week)
     if (!refDate) {
-        const explicitNum = cleanText.match(/(?:el\s*día|fecha:?)\s*(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/i);
+        const explicitNum = cleanText.match(/(?:para\s+el\s+d[íi]a|el\s+d[íi]a|convoca.*?para\s+el|fecha:?)\s*(?:(?:lunes|martes|mi[ée]rcoles|jueves|viernes|s[áa]bado|domingo)\s+)?(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?/i);
         if (explicitNum) {
             let day = parseInt(explicitNum[1], 10);
             let month = parseInt(explicitNum[2], 10) - 1;
-            let year = parseInt(explicitNum[3], 10);
+            let year = explicitNum[3] ? parseInt(explicitNum[3], 10) : defaultYear;
             if (year < 100) year += 2000;
-            refDate = new Date(Date.UTC(year, month, day));
+            if (month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+                refDate = new Date(Date.UTC(year, month, day));
+            }
         }
     }
 
@@ -375,7 +377,10 @@ async function fetchDetailedInfo(url, urlYear, title = '') {
         // 2. EXTRACT DISTINCT SUBJECT / WORKSHOP
         let distinctSubject = extractDistinctSubject(cleanContent);
         if (!distinctSubject && aiInstruct.llamados?.length > 0 && aiInstruct.llamados[0].materia) {
-            distinctSubject = aiInstruct.llamados[0].materia;
+            const candidateMat = aiInstruct.llamados[0].materia;
+            if (!/^(?:para\s+el|el\s+d[íi]a|seg[uú]n|conforme|art|resol|concurso)/i.test(candidateMat)) {
+                distinctSubject = candidateMat;
+            }
         }
         if (distinctSubject) {
             console.log(`    [DISTINCT] Found subject: ${distinctSubject}`);
@@ -807,4 +812,8 @@ async function syncToFirestore(concursos, unclassified = []) {
     }
 }
 
-run();
+if (require.main === module) {
+    run();
+}
+
+module.exports = { extractEventDate, isLinkRecent };

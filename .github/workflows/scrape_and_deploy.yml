@@ -2,8 +2,7 @@ name: Scrape and Deploy Contests
 
 on:
   schedule:
-    - cron: '10 * * * *'  # Se ejecuta cada hora (minuto 10)
-    - cron: '40 * * * *'  # Revisión intermedia cada hora (minuto 40)
+    - cron: '17,47 * * * *'  # Ejecución cada 30 min en minutos no congestionados para evitar retrasos y descartes en GitHub
   push:
     branches:
       - main            # Se ejecuta automáticamente ante cada actualización
