@@ -335,3 +335,50 @@ export function normalizeConcursoItem(item) {
         isAdminOpportunity
     };
 }
+
+/**
+ * Normalizes text for search comparisons:
+ * - lowercase
+ * - strips accents (á -> a)
+ * - normalizes dashes (–, —, − -> -)
+ * - collapses multiple whitespaces into a single space
+ */
+export function normalizeSearchText(text) {
+    if (!text) return '';
+    return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[–—−]/g, '-')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+/**
+ * Robust multi-token and fuzzy-safe search matcher for concursos
+ */
+export function matchConcursoSearch(c, query) {
+    if (!query || !query.trim()) return true;
+    const normQuery = normalizeSearchText(query);
+    if (!normQuery) return true;
+
+    const fullSearchable = normalizeSearchText([
+        c.title || '',
+        c.schoolName || '',
+        c.department || '',
+        c.primaryLlamado || '',
+        c.materiasSummary || '',
+        c.distinctSubject || '',
+        (c.materias || []).join(' '),
+        (c.plazas || []).join(' '),
+        c.fullContent || ''
+    ].join(' '));
+
+    // Direct match (even with partial phrase)
+    if (fullSearchable.includes(normQuery)) return true;
+
+    // Multi-token match (all query words present anywhere in the contest)
+    const tokens = normQuery.split(' ').filter(t => t.length > 0);
+    return tokens.length > 0 && tokens.every(token => fullSearchable.includes(token));
+}
+

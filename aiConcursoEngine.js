@@ -305,8 +305,8 @@ function parsePlazaLine(line) {
 
     // 2. Extract and strip schedule / días / horarios from the end
     let schedule = null;
-    const schedMatch = working.match(/(?:(?:\(|–|-|\.)\s*)?(?:d[ií]as?|horarios?|d[ií]a|los\s*d[ií]as)\s*[:–—\-]?\s*([^$\n\r]+)$/i) ||
-                       working.match(/(?:(?:\(|–|-|\.)\s*)?(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado)\s+(?:de\s+)?\d{1,2}[:\.]\d{2}[^$\n\r]*$/i) ||
+    const schedMatch = working.match(/(?:(?:\(|–|-|\.)\s*)?(?:d[ií]as?|horarios?|d[ií]a|los\s*d[ií]as|los)\s*[:–—\-]?\s*([^$\n\r]+)$/i) ||
+                       working.match(/(?:(?:\(|–|-|\.)\s*)?(?:los\s+)?(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado)\s+(?:de\s+)?\d{1,2}[:\.]\d{2}[^$\n\r]*$/i) ||
                        working.match(/\((?:lun|mar|mi[eé]|jue|vie)[^)]+\)/i);
     if (schedMatch) {
         schedule = schedMatch[0].replace(/^[\s–—:;\.,\-\(]+|[\s–—:;\.,\-\)]+$/g, '');
@@ -331,9 +331,9 @@ function parsePlazaLine(line) {
 
     // 5. Extract Course / Div / Ciclo (avoiding 'categoría' or words starting with a-g)
     let curso = null;
-    const cursoMatch = working.match(/\b(\d+[°ºª]\s*(?:año|divisi[oó]n)?(?:\s*["“”']?[a-gA-G0-9ªº°]{1,2}["“”']?)?|\d+to\s*\d+ra|\d+ro\s*[a-gA-G]|\d+er\s*año|\d+to\s*año|\d+º\s*\d+ª|\d+°\s*divisi[oó]n)\b(?!\s*categor[ií]a)/i);
+    const cursoMatch = working.match(/(?:\ben\s+)?\b(\d+[°ºª]\s*(?:año|divisi[oó]n)?(?:\s*["“”']?[a-gA-G0-9ªº°]{1,2}["“”']?)?|\d+to\s*\d+ra|\d+ro\s*[a-gA-G]|\d+er\s*año|\d+to\s*año|\d+º\s*\d+ª|\d+°\s*divisi[oó]n)\b(?!\s*categor[ií]a)/i);
     if (cursoMatch && !cursoMatch[0].toLowerCase().includes('categor')) {
-        curso = cursoMatch[0].trim();
+        curso = (cursoMatch[1] || cursoMatch[0]).trim();
         working = working.replace(cursoMatch[0], ' ');
     }
     // Clean division letters like "- B" or "B;" left behind by course
@@ -389,6 +389,8 @@ function parsePlazaLine(line) {
         .replace(/^(?:de\s+|en\s+|para\s+|del\s+)/i, '')
         .replace(/\b(?:hs|horas|h)\b/gi, ' ')
         .replace(/[“"”']/g, '')
+        .replace(/\b(?:los|en|el|la)\b/gi, ' ')
+        .replace(/[–—\-]+/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
 

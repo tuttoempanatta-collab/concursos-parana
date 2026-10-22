@@ -67,6 +67,26 @@ async function fixTimes() {
             console.log(`[LLAMADO CLEANED] ${doc.id} -> ${updates.primaryLlamado}`);
         }
 
+        // 5. Normalize redundant whitespace in title (e.g. "–  LLAMADO" -> "– LLAMADO")
+        if (data.title && /\s{2,}/.test(data.title)) {
+            updates.title = (updates.title || data.title).replace(/\s+/g, ' ').trim();
+            needsUpdate = true;
+            console.log(`[TITLE SPACES NORMALIZED] ${doc.id}`);
+        }
+
+        // 6. Clean polluted materia summary containing "- en - - - los"
+        if (data.materiasSummary && data.materiasSummary.includes('- en - - - los')) {
+            updates.materiasSummary = data.materiasSummary.replace(/- en - - - los/g, '').replace(/\s{2,}/g, ' ').trim();
+            if (Array.isArray(data.plazasList)) {
+                updates.plazasList = data.plazasList.map(p => ({
+                    ...p,
+                    materia: (p.materia || '').replace(/- en - - - los/g, '').replace(/\s{2,}/g, ' ').trim()
+                }));
+            }
+            needsUpdate = true;
+            console.log(`[MATERIA CLEANED] ${doc.id} -> ${updates.materiasSummary}`);
+        }
+
         if (needsUpdate) {
             batch.update(doc.ref, updates);
             fixed++;

@@ -52,6 +52,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { getSlugId } from '../../utils/idUtils';
+import { matchConcursoSearch } from '../../utils/concursoNormalizer';
 
 export default function AdminPage() {
   const [user, setUser] = useState(null);
@@ -614,14 +615,8 @@ export default function AdminPage() {
   const uniqueLocalities = ['Todas', ...new Set(concursos.map(c => c.department || 'No especificada').filter(Boolean))].sort();
 
   const filteredConcursos = concursos.filter(c => {
-    // 1. Search text (Title + Content)
-    const lowerSearch = searchTerm.toLowerCase();
-    const matchesSearch = !searchTerm || 
-      (c.title || '').toLowerCase().includes(lowerSearch) || 
-      (c.fullContent || '').toLowerCase().includes(lowerSearch) ||
-      (c.department || '').toLowerCase().includes(lowerSearch) ||
-      (c.materias || []).join(' ').toLowerCase().includes(lowerSearch) ||
-      (c.plazas || []).join(' ').toLowerCase().includes(lowerSearch);
+    // 1. Search text (Title + Content + School + Materias, accent/whitespace/dash insensitive)
+    const matchesSearch = matchConcursoSearch(c, searchTerm);
     
     // 2. Pub Date
     const matchesPubDate = !filterPubDate || (c.pubDate === filterPubDate);

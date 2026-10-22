@@ -17,7 +17,8 @@ import {
   checkAdminCredentialMatch,
   checkIsSegundoLlamado,
   checkAdminOpportunity,
-  isWithinRetentionWindow
+  isWithinRetentionWindow,
+  matchConcursoSearch
 } from '../utils/concursoNormalizer';
 
 export default function Home() {
@@ -584,14 +585,8 @@ export default function Home() {
     if (onlyAdminOpportunities && !cIsOpp) return false;
     if (onlyAdminMatches && !cIsAdmin) return false;
 
-    // 5. Search query
-    const searchMatch = searchQuery === '' || 
-      (c.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
-      cSchool.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      (c.department || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.primaryLlamado || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.materiasSummary || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.distinctSubject || '').toLowerCase().includes(searchQuery.toLowerCase());
+    // 5. Search query (accent, whitespace, dash and token insensitive)
+    const searchMatch = matchConcursoSearch({ ...c, schoolName: cSchool }, searchQuery);
       
     const docDate = c.date ? new Date(c.date) : null;
     

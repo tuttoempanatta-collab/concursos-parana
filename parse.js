@@ -513,9 +513,9 @@ async function scrapeCGEPage(url) {
                 const docId = getSlugId(href);
                 
                 // Refine title ONLY if distinctSubject is concise and not already present
-                let finalTitle = text;
-                if (details.distinctSubject && details.distinctSubject.length <= 40 && !text.toLowerCase().includes(details.distinctSubject.toLowerCase())) {
-                    finalTitle = `${text} (${details.distinctSubject})`;
+                let finalTitle = text.replace(/\s+/g, ' ').trim();
+                if (details.distinctSubject && details.distinctSubject.length <= 40 && !finalTitle.toLowerCase().includes(details.distinctSubject.toLowerCase())) {
+                    finalTitle = `${finalTitle} (${details.distinctSubject})`;
                 }
 
                 // Check historical tracking / detection timestamp
